@@ -2,7 +2,8 @@ import Image from "next/image";
 import {Button} from "@/components/ui/button";
 import { redirect } from 'next/navigation'
 import { UserButton } from "@clerk/nextjs";
-import { auth } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default async function Home() {
   const { userId } = await auth()
@@ -12,10 +13,12 @@ export default async function Home() {
   }
 
   return (
+    <ClerkProvider>
     <main style={{ padding: '2rem' }}>
       <h1>Welcome to the App!</h1>
       <p>You are successfully logged in.</p>
       <UserButton />
     </main>
+    </ClerkProvider>
   )
 }
