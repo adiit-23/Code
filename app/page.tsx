@@ -1,9 +1,21 @@
 import Image from "next/image";
 import {Button} from "@/components/ui/button";
-export default function Home() {
+import { redirect } from 'next/navigation'
+import { UserButton } from "@clerk/nextjs";
+import { auth } from '@clerk/nextjs/server'
+
+export default async function Home() {
+  const { userId } = await auth()
+
+  if (!userId) {
+    redirect('/sign-in')
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-     <Button>Hello Bitch</Button>
-    </div>
-  );
+    <main style={{ padding: '2rem' }}>
+      <h1>Welcome to the App!</h1>
+      <p>You are successfully logged in.</p>
+      <UserButton />
+    </main>
+  )
 }
