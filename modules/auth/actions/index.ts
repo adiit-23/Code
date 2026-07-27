@@ -7,7 +7,7 @@ export const onboardUser= async()=>{
     try{
         const user=await currentUser();
         if (!user){
-            return{ success:false, error:"No Authenticated User Found"}
+            return { success:false, error:"No Authenticated User Found"}
         }
         const {id , firstName, lastName, imageUrl, emailAddresses}=user;
         const newUser= await prisma.user.upsert({
@@ -56,11 +56,11 @@ export const currentUserRole= async()=>{
         console.log('====================================');
     }
 }
-//export const getCurrentUserData= async()=>{
-   try{
+/** export const getCurrentUserData= async()=>{
+  try{
         const user=await currentUser();
         if (!user){
-            return{ success:false, error:"No Authenticated User Found"}
+            return { success:false, error:"No Authenticated User Found"}
         }
         const data= await prisma.user.findUnique({
             where:{
@@ -78,5 +78,5 @@ export const currentUserRole= async()=>{
         console.log('====================================');
     } 
 //}
-
+**/
 
