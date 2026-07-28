@@ -45,7 +45,7 @@ export const currentUserRole= async()=>{
                 clerkId:id
             },
             select:{
-                    role:true
+                    role:true,
             }
         }) 
         return userRole?.role;
@@ -56,7 +56,7 @@ export const currentUserRole= async()=>{
         console.log('====================================');
     }
 }
-/** export const getCurrentUserData= async()=>{
+export const getCurrentUserData= async()=>{
   try{
         const user=await currentUser();
         if (!user){
@@ -70,7 +70,7 @@ export const currentUserRole= async()=>{
                     role:true
             }
         }) 
-        return userRole?.role;
+        return data;
     }
     catch(e){
         console.log('====================================');
@@ -78,5 +78,5 @@ export const currentUserRole= async()=>{
         console.log('====================================');
     } 
 //}
-**/
-
+//**/
+}

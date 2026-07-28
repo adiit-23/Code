@@ -27,4 +27,30 @@ model User{
   createdAt DateTime @default(now())
   updateAt DateTime @updatedAt
   imageUrl String?
+  problem Problem[]
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Problem{
+  id String @id @default(cuid())
+  title String
+  description String
+  difficulty Difficulty
+  tags String[]
+  examples Json
+  constraints String
+  hints String?
+  editorial String?
+  testCases Json
+  codeSnippets Json
+  referenceSolutions Json
+  createdAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+  userId String
+  user User @relation(fields:[userId], references:[id] ,onDelete:Cascade )
 }
