@@ -5,7 +5,7 @@ export function getJudge0laguageId(language:string){
     const languageMap={
         "PYTHON":71,
         "JAVA":62,
-        "C++":76,
+        "JAVASCRIPT":63,
     }
     return languageMap[language.toUpperCase() as keyof typeof languageMap];
 }
