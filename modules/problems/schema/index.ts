@@ -28,7 +28,7 @@ export const problemSchema = z.object({
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
     }),
-    JAVA: z.object({
+    C: z.object({
       input: z.string().min(1, "Input is required"),
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
@@ -37,12 +37,12 @@ export const problemSchema = z.object({
   codeSnippets: z.object({
     JAVASCRIPT: z.string().min(1, "JavaScript code snippet is required"),
     PYTHON: z.string().min(1, "Python code snippet is required"),
-    JAVA: z.string().min(1, "Java solution is required"),
+    C: z.string().min(1, "C solution is required"),
   }),
   referenceSolutions: z.object({
     JAVASCRIPT: z.string().min(1, "JavaScript solution is required"),
     PYTHON: z.string().min(1, "Python solution is required"),
-    JAVA: z.string().min(1, "Java solution is required"),
+    C: z.string().min(1, "C solution is required"),
   })});
   export const defaultFormValues= {
       title:"",description:"",difficulty:undefined,constraints:"",hints:"",editorial:"",
@@ -51,21 +51,21 @@ export const problemSchema = z.object({
       examples: {
         JAVASCRIPT: { input: "", output: "", explanation: "" },
         PYTHON: { input: "", output: "", explanation: "" },
-        JAVA: { input: "", output: "", explanation: "" },
+        C: { input: "", output: "", explanation: "" },
       },
       codeSnippets: {
         JAVASCRIPT: "function solution() {\n  // Write your code here\n}",
         PYTHON: "def solution():\n    # Write your code here\n    pass",
-        JAVA: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+        C: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
       },
       referenceSolutions: {
         JAVASCRIPT: "// Add your reference solution here",
         PYTHON: "# Add your reference solution here",
-        JAVA: "// Add your reference solution here",
+        C: "// Add your reference solution here",
       },
     }
 
-export const LANGUAGES=["JAVASCRIPT","PYTHON","JAVA"];
+export const LANGUAGES=["JAVASCRIPT","PYTHON","C"];
 export const DIFFICULTY_OPTIONS=[
     {value:"EASY",label:"Easy",className:"bg-green-100 text-green-800"},
     {value:"MEDIUM",label:"Medium",className:"bg-amber-100 text-amber-800"},

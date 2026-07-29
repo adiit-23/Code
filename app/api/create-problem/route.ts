@@ -10,9 +10,11 @@ export async function POST(request:NextRequest) {
     try {
         const userRole= await currentUserRole();
         const user= await getCurrentUserData();
-        if (!user){
-            return NextResponse.json({error:"User not found"})
+        console.log("CURRENT USER OBJECT:", user);
+        if (!user || !("id" in user)){
+            return NextResponse.json({error:"User not found"},{status:401})
         }
+        const userId = (user as { id: string }).id;
         if (userRole!=UserRole.ADMIN){
             return NextResponse.json({error:"Unauthorised"},{status:401})
         }
@@ -64,8 +66,7 @@ export async function POST(request:NextRequest) {
         const newProblem=await prisma.problem.create({
             data:{
                 title,description,difficulty,tags,examples,constraints,testCases,codeSnippets,referenceSolutions,
-                //@ts-ignore
-                userId:user.id
+                userId: userId,
             }
         })
         return NextResponse.json({

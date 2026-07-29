@@ -3,8 +3,8 @@ import axios from "axios";
 export function getJudge0laguageId(language: string) {
     const languageMap = {
         "PYTHON": { language: "python", version: "3.10.0" },
-        "JAVA": { language: "java", version: "15.0.2" },
-        "JAVASCRIPT": { language: "javascript", version: "18.15.0" }
+        "JAVASCRIPT": { language: "javascript", version: "18.15.0" },
+        "C": { language: "c++", version: "10.2.0" }
     };
     return languageMap[language.toUpperCase() as keyof typeof languageMap];
 }
@@ -13,23 +13,26 @@ export async function submitBatch(submissions: any[]) {
     // Piston executes synchronously, so we run all submissions in parallel using Promise.all
     const executionPromises = submissions.map(async (sub) => {
         const options = {
-            method: 'POST',
-            url: 'http://localhost:2000/api/v2/execute',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: {
-                language: sub.language, // e.g. "python", "java", "node"
-                version: sub.version,   // e.g. "3.10.0"
-                files: [
-                    {
-                        name: sub.name || "main",
-                        content: sub.source_code
-                    }
-                ],
-                stdin: sub.stdin || "", // <-- ADDED THIS: Crucial for your test cases to work!
+    method: 'POST',
+    url: 'http://localhost:2000/api/v2/execute',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    data: {
+        language: sub.language,
+        version: sub.version,
+        files: [
+            {
+                // Ensure Java gets a capitalized Main.java if that's what the class is named
+                name: sub.language === "java" ? "Main.java" : (sub.name || "main"),
+                content: sub.source_code
             }
-        };
+        ],
+        // FORCE a newline so Java's Scanner.nextLine() doesn't hang waiting for an EOF
+        stdin: (sub.stdin || "") + "\n", 
+        
+    }
+};console.log("FINAL JAVA PAYLOAD:\n", sub.source_code);
 
        try {
     const { data } = await axios.request(options);

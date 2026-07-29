@@ -59,7 +59,7 @@ const problemSchema = z.object({
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
     }),
-    JAVA: z.object({
+    C: z.object({
       input: z.string().min(1, "Input is required"),
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
@@ -68,12 +68,12 @@ const problemSchema = z.object({
   codeSnippets: z.object({
     JAVASCRIPT: z.string().min(1, "JavaScript code snippet is required"),
     PYTHON: z.string().min(1, "Python code snippet is required"),
-    JAVA: z.string().min(1, "Java solution is required"),
+    C: z.string().min(1, "C solution is required"),
   }),
   referenceSolutions: z.object({
     JAVASCRIPT: z.string().min(1, "JavaScript solution is required"),
     PYTHON: z.string().min(1, "Python solution is required"),
-    JAVA: z.string().min(1, "Java solution is required"),
+    C: z.string().min(1, "C solution is required"),
   }),
 });
 
@@ -110,7 +110,7 @@ const sampledpData: ProblemFormValues = {
       explanation:
         "There are three ways to climb to the top:\n1. 1 step + 1 step + 1 step\n2. 1 step + 2 steps\n3. 2 steps + 1 step",
     },
-    JAVA: {
+    C: {
       input: "n = 4",
       output: "5",
       explanation:
@@ -120,12 +120,99 @@ const sampledpData: ProblemFormValues = {
   codeSnippets: {
     JAVASCRIPT: `/**\n* @param {number} n\n* @return {number}\n*/\nfunction climbStairs(n) {\n// Write your code here\n}\n\nconst readline = require('readline');\nconst rl = readline.createInterface({\ninput: process.stdin,\noutput: process.stdout,\nterminal: false\n});\n\nrl.on('line', (line) => {\nconst n = parseInt(line.trim());\nconst result = climbStairs(n);\n\nconsole.log(result);\nrl.close();\n});`,
     PYTHON: `class Solution:\n  def climbStairs(self, n: int) -> int:\n      # Write your code here\n      pass\n\nif __name__ == "__main__":\n  import sys\n  n = int(sys.stdin.readline().strip())\n  sol = Solution()\n  result = sol.climbStairs(n)\n  print(result)`,
-    JAVA: `import java.util.Scanner;\n\nclass Main {\n  public int climbStairs(int n) {\n      // Write your code here\n      return 0;\n  }\n  \n  public static void main(String[] args) {\n      Scanner scanner = new Scanner(System.in);\n      int n = Integer.parseInt(scanner.nextLine().trim());\n      Main main = new Main();\n      int result = main.climbStairs(n);\n      System.out.println(result);\n      scanner.close();\n  }\n}`,
+    C: `#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// --- USER SUBMITTED CODE STARTS ---
+
+// int main() {
+    string input_raw;
+    
+    // Read the single token from stdin
+    if (!(cin >> input_raw)) {
+        return 0; // Exit silently if there is no input
+    }
+
+    // Strip surrounding quotes if your backend passes it as '"5"'
+    if (input_raw.length() >= 2 && input_raw.front() == '"' && input_raw.back() == '"') {
+        input_raw = input_raw.substr(1, input_raw.length() - 2);
+    }
+
+    // Convert string to integer
+    int n;
+    try {
+        n = stoi(input_raw);
+    } catch (...) {
+        // If it fails to parse (e.g., empty string or invalid chars), exit
+        return 1; 
+    }
+
+    // Execute and print the result
+    cout << climbStairs(n);
+
+    return 0;
+}`,
   },
   referenceSolutions: {
     JAVASCRIPT: `/**\n* @param {number} n\n* @return {number}\n*/\nfunction climbStairs(n) {\nif (n <= 2) return n;\nlet dp = new Array(n + 1);\ndp[1] = 1;\ndp[2] = 2;\nfor (let i = 3; i <= n; i++) {\n  dp[i] = dp[i - 1] + dp[i - 2];\n}\nreturn dp[n];\n}`,
     PYTHON: `class Solution:\n  def climbStairs(self, n: int) -> int:\n      if n <= 2:\n          return n\n      dp = [0] * (n + 1)\n      dp[1] = 1\n      dp[2] = 2\n      for i in range(3, n + 1):\n          dp[i] = dp[i - 1] + dp[i - 2]\n      return dp[n]`,
-    JAVA: `import java.util.Scanner;\n\nclass Main {\n  public int climbStairs(int n) {\n      if (n <= 2) return n;\n      int[] dp = new int[n + 1];\n      dp[1] = 1;\n      dp[2] = 2;\n      for (int i = 3; i <= n; i++) {\n          dp[i] = dp[i - 1] + dp[i - 2];\n      }\n      return dp[n];\n  }\n}`,
+    C: `#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// --- USER SUBMITTED CODE STARTS ---
+int climbStairs(int n) {
+    // Base cases
+    if (n <= 2) return n;
+    
+    // Create a DP array of size n + 1 to store the number of ways 
+    // to reach each step (using 1-based indexing for simplicity)
+    vector<int> dp(n + 1);
+    dp[1] = 1;
+    dp[2] = 2;
+    
+    // Build the solution from the bottom up
+    for (int i = 3; i <= n; i++) {
+        dp[i] = dp[i - 1] + dp[i - 2];
+    }
+    
+    return dp[n];
+}
+// --- USER SUBMITTED CODE ENDS ---
+
+// --- PLATFORM INJECTED WRAPPER ---
+int main() {
+    string input_raw;
+    
+    // Read the single token from stdin
+    if (!(cin >> input_raw)) {
+        return 0; // Exit silently if there is no input
+    }
+
+    // Strip surrounding quotes if your backend passes it as '"5"'
+    if (input_raw.length() >= 2 && input_raw.front() == '"' && input_raw.back() == '"') {
+        input_raw = input_raw.substr(1, input_raw.length() - 2);
+    }
+
+    // Convert string to integer
+    int n;
+    try {
+        n = stoi(input_raw);
+    } catch (...) {
+        // If it fails to parse (e.g., empty string or invalid chars), exit
+        return 1; 
+    }
+
+    // Execute and print the result
+    cout << climbStairs(n);
+
+    return 0;
+}`,
   },
 };
 
@@ -158,7 +245,7 @@ const sampleStringProblem: ProblemFormValues = {
       output: "true",
       explanation: '"amanaplanacanalpanama" is a palindrome.',
     },
-    JAVA: {
+    C: {
       input: 's = "A man, a plan, a canal: Panama"',
       output: "true",
       explanation: '"amanaplanacanalpanama" is a palindrome.',
@@ -167,51 +254,100 @@ const sampleStringProblem: ProblemFormValues = {
   codeSnippets: {
     JAVASCRIPT: `function isPalindrome(s) {\n  // Write your code here\n}`,
     PYTHON: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        # Write your code here\n        pass`,
-    JAVA: `import java.util.Scanner; public class Main {\n    public static boolean isPalindrome(String s) {\n        // Write your code here\n        return false;\n    }\npublic static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        
-        // Use 'if' instead of 'while' to prevent infinite blocking/hanging
-        if (scanner.hasNextLine()) {
-            String input = scanner.nextLine();
-            
-            // Optional: If your backend passes the string with literal quotes (e.g., '"Panama"'), strip them
-            if (input.startsWith("\"") && input.endsWith("\"")) {
-                input = input.substring(1, input.length() - 1);
-            }
-            
-            System.out.print(isPalindrome(input));
-        }
-        
-        scanner.close(); // Always close the scanner to free resources
-    }\n}`,
+    C: `#include <iostream>
+#include <string>
+#include <cctype>
+
+using namespace std;
+
+// --- USER SUBMITTED CODE STARTS ---
+// 
+int main() {
+    string input, temp;
+    
+    // Read all of stdin securely
+    while (getline(cin, temp)) {
+        input += temp;
+    }
+
+    // Strip surrounding quotes if your backend passes it as '"Panama"'
+    if (input.length() >= 2 && input.front() == '"' && input.back() == '"') {
+        input = input.substr(1, input.length() - 2);
+    }
+
+    // Execute and print
+    if (isPalindrome(input)) {
+        cout << "true";
+    } else {
+        cout << "false";
+    }
+
+    return 0;
+}
+// `,
   },
   referenceSolutions: {
     JAVASCRIPT: `function isPalindrome(s) {\n  s = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n  let left = 0;\n  let right = s.length - 1;\n  while (left < right) {\n    if (s[left] !== s[right]) return false;\n    left++;\n    right--;\n  }\n  return true;\n}`,
     PYTHON: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        filtered_chars = [c.lower() for c in s if c.isalnum()]\n        return filtered_chars == filtered_chars[::-1]`,
-    JAVA: `import java.util.Scanner; public class Main {\n    public static boolean isPalindrome(String s) {\n        s = s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();\n        int left = 0, right = s.length() - 1;\n        while (left < right) {\n            if (s.charAt(left) != s.charAt(right)) return false;\n            left++;\n            right--;\n        }\n        return true;\n    }\npublic static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        
-        // Use 'if' instead of 'while' to prevent infinite blocking/hanging
-        if (scanner.hasNextLine()) {
-            String input = scanner.nextLine();
-            
-            // Optional: If your backend passes the string with literal quotes (e.g., '"Panama"'), strip them
-            if (input.startsWith("\"") && input.endsWith("\"")) {
-                input = input.substring(1, input.length() - 1);
-            }
-            
-            System.out.print(isPalindrome(input));
+    C: `#include <iostream>
+#include <string>
+#include <cctype>
+
+using namespace std;
+
+// --- USER SUBMITTED CODE STARTS ---
+bool isPalindrome(string s) {
+    string filtered = "";
+    for (char c : s) {
+        if (isalnum(c)) {
+            filtered += tolower(c);
         }
-        
-        scanner.close(); // Always close the scanner to free resources
-    }\n}`,
+    }
+    
+    if (filtered.empty()) return true;
+    
+    int left = 0, right = filtered.length() - 1;
+    while (left < right) {
+        if (filtered[left] != filtered[right]) return false;
+        left++;
+        right--;
+    }
+    return true;
+}
+// --- USER SUBMITTED CODE ENDS ---
+
+// --- PLATFORM INJECTED WRAPPER ---
+int main() {
+    string input, temp;
+    
+    // Read all of stdin securely
+    while (getline(cin, temp)) {
+        input += temp;
+    }
+
+    // Strip surrounding quotes if your backend passes it as '"Panama"'
+    if (input.length() >= 2 && input.front() == '"' && input.back() == '"') {
+        input = input.substr(1, input.length() - 2);
+    }
+
+    // Execute and print
+    if (isPalindrome(input)) {
+        cout << "true";
+    } else {
+        cout << "false";
+    }
+
+    return 0;
+}
+            
+           `,
   },
 };
 
 interface CodeEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
-  language?: "javascript" | "python" | "java";
+  language?: "javascript" | "python" | "c";
 }
 
 const CodeEditor = ({
@@ -222,7 +358,7 @@ const CodeEditor = ({
   const languageMap = {
     javascript: "javascript",
     python: "python",
-    java: "java",
+    c: "gcc",
   };
 
   return (
@@ -267,17 +403,17 @@ const CreateProblemForm = () => {
       examples: {
         JAVASCRIPT: { input: "", output: "", explanation: "" },
         PYTHON: { input: "", output: "", explanation: "" },
-        JAVA: { input: "", output: "", explanation: "" },
+        C: { input: "", output: "", explanation: "" },
       },
       codeSnippets: {
         JAVASCRIPT: "function solution() {\n  // Write your code here\n}",
         PYTHON: "def solution():\n    # Write your code here\n    pass",
-        JAVA: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+        C: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
       },
       referenceSolutions: {
         JAVASCRIPT: "// Add your reference solution here",
         PYTHON: "# Add your reference solution here",
-        JAVA: "// Add your reference solution here",
+        C: "// Add your reference solution here",
       },
     },
   });
@@ -585,7 +721,7 @@ const CreateProblemForm = () => {
             </Card>
 
             {/* Code Editor Sections */}
-            {(["JAVASCRIPT", "PYTHON", "JAVA"] as const).map((language) => (
+            {(["JAVASCRIPT", "PYTHON", "C"] as const).map((language) => (
               <Card key={language} className="bg-blue-50/40 border-blue-100 shadow-sm">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl flex items-center gap-2 text-blue-800">
@@ -604,7 +740,7 @@ const CreateProblemForm = () => {
                         <CodeEditor
                           value={field.value}
                           onChange={field.onChange}
-                          language={language.toLowerCase() as "javascript" | "python" | "java"}
+                          language={language.toLowerCase() as "javascript" | "python" | "c"}
                         />
                       )}
                     />
@@ -623,7 +759,7 @@ const CreateProblemForm = () => {
                         <CodeEditor
                           value={field.value}
                           onChange={field.onChange}
-                          language={language.toLowerCase() as "javascript" | "python" | "java"}
+                          language={language.toLowerCase() as "javascript" | "python" | "c"}
                         />
                       )}
                     />
