@@ -1,62 +1,101 @@
 import axios from "axios";
-import { ms } from "date-fns/locale";
 
-export function getJudge0laguageId(language:string){
-    const languageMap={
-        "PYTHON":71,
-        "JAVA":62,
-        "JAVASCRIPT":63,
-    }
+export function getJudge0laguageId(language: string) {
+    const languageMap = {
+        "PYTHON": { language: "python", version: "3.10.0" },
+        "JAVA": { language: "java", version: "15.0.2" },
+        "JAVASCRIPT": { language: "javascript", version: "18.15.0" }
+    };
     return languageMap[language.toUpperCase() as keyof typeof languageMap];
 }
 
-export async function submitBatch(submissions:any) {
-    
-    const options = {
-  method: 'POST',
-  url: 'https://judge0-extra-ce1.p.rapidapi.com/submissions/batch',
-  params: {
-    base64_encoded: 'false'
-  },
-  headers: {
-    'x-rapidapi-key': '201fcca4a3mshbc5b6b16019cec5p10f95djsna061b05b9c6b',
-    'x-rapidapi-host': 'judge0-extra-ce1.p.rapidapi.com',
-    'Content-Type': 'application/json'
-  },
-  data: 
-    {submissions: submissions}
-    
-  
-};
-
-    
-    const {data}= await axios.request(options);
-    return data;
-}
-
-export async function pollBatchResults(tokens:string[]) {
-    while(true){
+export async function submitBatch(submissions: any[]) {
+    // Piston executes synchronously, so we run all submissions in parallel using Promise.all
+    const executionPromises = submissions.map(async (sub) => {
         const options = {
-  method: 'GET',
-  url: 'https://judge0-extra-ce1.p.rapidapi.com/submissions/batch',
-  params: {
-    tokens: tokens.join(","),
-    base64_encoded: 'true',
-    fields: '*'
-  },
-  headers: {
-    'x-rapidapi-key': '201fcca4a3mshbc5b6b16019cec5p10f95djsna061b05b9c6b',
-    'x-rapidapi-host': 'judge0-extra-ce1.p.rapidapi.com',
-    'Content-Type': 'application/json'
-  }
-};
-    const {data}= await axios.request(options);
-    const results=data.submissions;
-    const isAllDone=results.every(
-        (r:any)=>r.status.id!==2 &&r.status.id!=2
-    )
-    if (isAllDone){return results;}
-    await sleep(1000);
+            method: 'POST',
+            url: 'http://localhost:2000/api/v2/execute',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                language: sub.language, // e.g. "python", "java", "node"
+                version: sub.version,   // e.g. "3.10.0"
+                files: [
+                    {
+                        name: sub.name || "main",
+                        content: sub.source_code
+                    }
+                ],
+                stdin: sub.stdin || "", // <-- ADDED THIS: Crucial for your test cases to work!
+            }
+        };
+
+       try {
+    const { data } = await axios.request(options);
+
+    // 1. Check for Compilation Errors first
+    if (data.compile && data.compile.code !== 0) {
+        return {
+            stdout: "",
+            stderr: data.compile.stderr, // This will show Java syntax errors
+            exit_code: data.compile.code,
+            status: { id: 6, description: "Compilation Error" } // Standard Judge0 ID
+        };
     }
+
+    // 2. Check for actual Timeouts (Piston sends SIGKILL when killed by timeout)
+    if (data.run.signal === "SIGKILL") {
+        return {
+            stdout: data.run.stdout,
+            stderr: data.run.stderr || "Process killed (Timeout)",
+            exit_code: null,
+            status: { id: 5, description: "Time Limit Exceeded" } // Standard Judge0 ID
+        };
+    }
+
+    // 3. Check for Runtime Errors (Exceptions, crashes, etc.)
+    if (data.run.code !== 0) {
+        return {
+            stdout: data.run.stdout,
+            stderr: data.run.stderr, // This will show Java Stack Traces (e.g., ArrayIndexOutOfBounds)
+            exit_code: data.run.code,
+            status: { id: 11, description: "Runtime Error" } // Standard Judge0 ID
+        };
+    }
+
+    // 4. Success
+    return {
+        stdout: data.run.stdout,
+        stderr: data.run.stderr,
+        exit_code: 0,
+        status: { id: 3, description: "Accepted" } // Standard Judge0 ID
+    };
+
+} catch (error: any) {
+    const actualError = error.response?.data 
+        ? JSON.stringify(error.response.data) 
+        : error.message;
+
+    console.error(`Piston API Error for ${sub.language}:`, actualError);
+
+    return {
+        stdout: "",
+        stderr: actualError,
+        exit_code: 1,
+        status: { id: 13, description: "Internal Error" }
+    };
 }
-export const sleep=(ms:any)=>new Promise((resolve)=>setTimeout(resolve,ms));
+
+    
+});const results = await Promise.all(executionPromises);
+    return results;}
+
+// Since Piston is synchronous and returns results instantly, 
+// pollBatchResults is no longer needed, but kept as a passthrough wrapper if your frontend expects it.
+//export async function pollBatchResults(tokens: string[]) {
+    // Piston doesn't use tokens; submitBatch already returns completed results.
+    //return tokens;
+//}
+//@
+//export const sleep = (ms: any) => new Promise((resolve) => setTimeout(resolve, ms))

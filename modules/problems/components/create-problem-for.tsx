@@ -167,12 +167,44 @@ const sampleStringProblem: ProblemFormValues = {
   codeSnippets: {
     JAVASCRIPT: `function isPalindrome(s) {\n  // Write your code here\n}`,
     PYTHON: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        # Write your code here\n        pass`,
-    JAVA: `public class Main {\n    public static boolean isPalindrome(String s) {\n        // Write your code here\n        return false;\n    }\n}`,
+    JAVA: `import java.util.Scanner; public class Main {\n    public static boolean isPalindrome(String s) {\n        // Write your code here\n        return false;\n    }\npublic static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        
+        // Use 'if' instead of 'while' to prevent infinite blocking/hanging
+        if (scanner.hasNextLine()) {
+            String input = scanner.nextLine();
+            
+            // Optional: If your backend passes the string with literal quotes (e.g., '"Panama"'), strip them
+            if (input.startsWith("\"") && input.endsWith("\"")) {
+                input = input.substring(1, input.length() - 1);
+            }
+            
+            System.out.print(isPalindrome(input));
+        }
+        
+        scanner.close(); // Always close the scanner to free resources
+    }\n}`,
   },
   referenceSolutions: {
     JAVASCRIPT: `function isPalindrome(s) {\n  s = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n  let left = 0;\n  let right = s.length - 1;\n  while (left < right) {\n    if (s[left] !== s[right]) return false;\n    left++;\n    right--;\n  }\n  return true;\n}`,
     PYTHON: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        filtered_chars = [c.lower() for c in s if c.isalnum()]\n        return filtered_chars == filtered_chars[::-1]`,
-    JAVA: `public class Main {\n    public static boolean isPalindrome(String s) {\n        s = s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();\n        int left = 0, right = s.length() - 1;\n        while (left < right) {\n            if (s.charAt(left) != s.charAt(right)) return false;\n            left++;\n            right--;\n        }\n        return true;\n    }\n}`,
+    JAVA: `import java.util.Scanner; public class Main {\n    public static boolean isPalindrome(String s) {\n        s = s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();\n        int left = 0, right = s.length() - 1;\n        while (left < right) {\n            if (s.charAt(left) != s.charAt(right)) return false;\n            left++;\n            right--;\n        }\n        return true;\n    }\npublic static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        
+        // Use 'if' instead of 'while' to prevent infinite blocking/hanging
+        if (scanner.hasNextLine()) {
+            String input = scanner.nextLine();
+            
+            // Optional: If your backend passes the string with literal quotes (e.g., '"Panama"'), strip them
+            if (input.startsWith("\"") && input.endsWith("\"")) {
+                input = input.substring(1, input.length() - 1);
+            }
+            
+            System.out.print(isPalindrome(input));
+        }
+        
+        scanner.close(); // Always close the scanner to free resources
+    }\n}`,
   },
 };
 
@@ -280,7 +312,14 @@ const CreateProblemForm = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+      
       const data = await response.json();
+      console.log(data);
+      // Check if the server returned an error status (like 400 or 401)
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create problem");
+      }
+
       toast.success(data.message || "Problem created successfully");
       router.push("/problems");
     } catch (error: any) {

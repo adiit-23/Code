@@ -2,7 +2,7 @@ import { UserRole } from "@/lib/generated/prisma/enums";
 import { currentUserRole, getCurrentUserData } from "@/modules/auth/actions";
 import { CurrencyBtcIcon } from "@phosphor-icons/react";
 import { NextRequest, NextResponse } from "next/server";
-import { getJudge0laguageId, pollBatchResults, submitBatch } from "@/lib/judge0";
+import { getJudge0laguageId, submitBatch } from "@/lib/judge0"; // removed pollBatchResults
 import { Source_Code_Pro } from "next/font/google";
 import {prisma} from "@/lib/db";
 
@@ -27,16 +27,22 @@ export async function POST(request:NextRequest) {
         }
         for (const [language,solutionCode] of Object.entries(referenceSolutions))
         {
-            const languageId=getJudge0laguageId(language);
+            const langConfig=getJudge0laguageId(language);
+            if (!langConfig) {
+                return NextResponse.json({error:`Unsupported language: ${language}`},{status:400});
+            }
+            
             const submissions=testCases.map(({input,output})=>({
-                source_code:solutionCode,
-                language_id:languageId,
-                stdin:input,
-                expected_output:output
+                source_code: solutionCode,
+                language: langConfig.language,
+                version: langConfig.version,
+                stdin: input,
+                expected_output: output
             }))
-            const submissionsResults=await submitBatch(submissions);
-            const tokens=submissionsResults.map((res:any)=>res.token);
-            const results=await pollBatchResults(tokens)
+            
+            // submitBatch now instantly returns the evaluated results array from Piston
+            const results = await submitBatch(submissions);
+            console.log(results);
             for (let i=0;i<results.length;i++){
                 const result=results[i];
                 if (result.status.id!=3){
@@ -46,7 +52,7 @@ export async function POST(request:NextRequest) {
                             input:submissions[i].stdin,
                             expectedOutput:submissions[i].expected_output,
                             actualOutput:result.stdout,
-                            error:result.stderr||result.compile_output,
+                            error:result.stderr,
                         },
                         details:result,
 
