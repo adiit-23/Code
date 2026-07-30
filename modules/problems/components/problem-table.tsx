@@ -61,7 +61,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
   const filteredProblems = useMemo(() => {
     return (problems || [])
       .filter((problem) =>
-        problem.title.toLowerCase().includes(search.toLowerCase())
+        (problem.title || "").toLowerCase().includes(search.toLowerCase())
       )
       .filter((problem) =>
         difficulty === "ALL" ? true : problem.difficulty === difficulty
@@ -135,7 +135,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   placeholder="Search by title..."
                   value={search}

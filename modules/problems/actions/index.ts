@@ -29,3 +29,16 @@ export const createPlaylist = async () => {
 export const deleteProblem = async () => {
     
 }
+export const getProblemById = async(id:string) => {
+    try {
+        const problem = await prisma.problem.findUnique({
+            where: {
+                id: id,
+            },
+        });
+        return { success: true, data: problem };
+    } catch (error) {
+        console.error("❌ Error fetching problem:", error);
+        return { success: false, error: "Failed to fetch problem" };
+    }
+}
