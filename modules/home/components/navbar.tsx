@@ -54,6 +54,7 @@ async function Navbar() {
           <div className="hidden md:flex flex-row items-center justify-center gap-x-8">
             <Link
               href="/problem"
+              prefetch={false}
               className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             >
               Problems

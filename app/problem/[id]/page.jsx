@@ -17,7 +17,7 @@ import { Play, Send, Code, FileText, Lightbulb, Trophy, ArrowLeft, Loader2 } fro
 
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/ui/mode-toggle';
-import { getJudge0LanguageId } from '@/lib/judge0';
+import { getJudge0laguageId } from '@/lib/judge0';
 import { toast } from 'sonner';
 import { SubmissionHistory } from '@/modules/problems/components/submission-history';
 import Link from 'next/link';
@@ -92,7 +92,7 @@ const ProblemIdPage = ({ params }) => {
 
    try {
     setIsRunning(true);
-      const language_id = getJudge0LanguageId(selectedLanguage);
+      const language_id = getJudge0laguageId(selectedLanguage);
       const stdin = problem.testCases.map((tc) => tc.input);
       const expected_outputs = problem.testCases.map((tc) => tc.output);
       const res = await executeCode(code, language_id, stdin, expected_outputs, problem.id);
@@ -110,7 +110,8 @@ const ProblemIdPage = ({ params }) => {
   };
 
   const handleSubmit =  () => {
-    toast.success("TODO: Coming Soon🔥");
+    
+
   };
 
   if(!problem){
@@ -129,7 +130,7 @@ const ProblemIdPage = ({ params }) => {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <Link href="/">
+              <Link href="/problem">
                 <Button variant="outline" size="icon">
                   <ArrowLeft className="size-4" />
                 </Button>
@@ -255,7 +256,7 @@ const ProblemIdPage = ({ params }) => {
                     <SelectContent>
                       <SelectItem value="JAVASCRIPT">JavaScript</SelectItem>
                       <SelectItem value="PYTHON">Python</SelectItem>
-                      <SelectItem value="JAVA">Java</SelectItem>
+                      <SelectItem value="C">C++</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

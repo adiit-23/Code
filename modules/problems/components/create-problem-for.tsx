@@ -59,7 +59,7 @@ const problemSchema = z.object({
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
     }),
-    C: z.object({
+    CPP: z.object({
       input: z.string().min(1, "Input is required"),
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
@@ -68,19 +68,247 @@ const problemSchema = z.object({
   codeSnippets: z.object({
     JAVASCRIPT: z.string().min(1, "JavaScript code snippet is required"),
     PYTHON: z.string().min(1, "Python code snippet is required"),
-    C: z.string().min(1, "C solution is required"),
+    CPP: z.string().min(1, "CPP solution is required"),
   }),
   referenceSolutions: z.object({
     JAVASCRIPT: z.string().min(1, "JavaScript solution is required"),
     PYTHON: z.string().min(1, "Python solution is required"),
-    C: z.string().min(1, "C solution is required"),
+    CPP: z.string().min(1, "CPP solution is required"),
   }),
 });
 
 // Extract type from schema to strictly type the mock data
 type ProblemFormValues = z.infer<typeof problemSchema>;
 
-// Sample problem data for pre-filling the form
+const sampleStringProblem: ProblemFormValues = {
+  title: "Valid Palindrome",
+  description:
+    "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward. Alphanumeric characters include letters and numbers. Given a string s, return true if it is a palindrome, or false otherwise.",
+  difficulty: "EASY",
+  tags: ["String", "Two Pointers"],
+  constraints:
+    "1 <= s.length <= 2 * 10^5\ns consists only of printable ASCII characters.",
+  hints:
+    "Consider using two pointers, one from the start and one from the end, moving towards the center.",
+  editorial:
+    "We can use two pointers approach to check if the string is a palindrome. One pointer starts from the beginning and the other from the end, moving towards each other.",
+  testCases: [
+    { input: "A man, a plan, a canal: Panama", output: "true" },
+    { input: "race a car", output: "false" },
+    { input: " ", output: "true" },
+  ],
+  examples: {
+    JAVASCRIPT: {
+      input: 's = "A man, a plan, a canal: Panama"',
+      output: "true",
+      explanation: '"amanaplanacanalpanama" is a palindrome.',
+    },
+    PYTHON: {
+      input: 's = "A man, a plan, a canal: Panama"',
+      output: "true",
+      explanation: '"amanaplanacanalpanama" is a palindrome.',
+    },
+    CPP: {
+      input: 's = "A man, a plan, a canal: Panama"',
+      output: "true",
+      explanation: '"amanaplanacanalpanama" is a palindrome.',
+    },
+  },
+  codeSnippets: {
+    JAVASCRIPT: `const fs = require('fs');
+
+// 1. Your core algorithm logic
+function isPalindrome(s) {
+  
+}
+
+// 2. Driver code to handle Judge0 stdin/stdout
+function main() {
+  // Read all data from standard input (stdin)
+  let input = fs.readFileSync(0, 'utf-8').trim();
+  
+  if (!input) {
+    console.log("true");
+    return;
+  }
+
+  if (input.startsWith('"') && input.endsWith('"')) {
+    input = input.slice(1, -1);
+  }
+
+  const result = isPalindrome(input);
+  console.log(result);
+}
+
+main();
+ `,
+    PYTHON: `class Solution:
+    def isPalindrome(self, s: str) -> bool:
+        # Write your code here
+        pass
+
+# --- PLATFORM INJECTED WRAPPER ---
+if __name__ == "__main__":
+    import sys
+    
+    # Read all input from stdin
+    input_str = sys.stdin.read().strip()
+    
+    # Strip surrounding quotes if your backend passes it as '"Panama"'
+    if len(input_str) >= 2 and input_str.startswith('"') and input_str.endswith('"'):
+        input_str = input_str[1:-1]
+        
+    sol = Solution()
+    result = sol.isPalindrome(input_str)
+    
+    # Convert Python's True/False to lowercase true/false to match test cases
+    print("true" if result else "false")`,
+    CPP: `#include <iostream>
+#include <string>
+#include <cctype>
+
+using namespace std;
+
+// --- USER SUBMITTED CODE STARTS ---
+bool isPalindrome(string s) {
+    // Write your code here
+    
+}
+// --- USER SUBMITTED CODE ENDS ---
+
+// --- PLATFORM INJECTED WRAPPER ---
+int main() {
+    string input, temp;
+    
+    // Read all of stdin securely
+    while (getline(cin, temp)) {
+        input += temp;
+    }
+
+    // Strip surrounding quotes if your backend passes it as '"Panama"'
+    if (input.length() >= 2 && input.front() == '"' && input.back() == '"') {
+        input = input.substr(1, input.length() - 2);
+    }
+
+    // Execute and print
+    if (isPalindrome(input)) {
+        cout << "true";
+    } else {
+        cout << "false";
+    }
+
+    return 0;
+}`,
+  },
+  referenceSolutions: {
+    JAVASCRIPT: `const fs = require('fs');
+
+// 1. Your core algorithm logic
+function isPalindrome(s) {
+  s = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let left = 0;
+  let right = s.length - 1;
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
+  }
+  return true;
+}
+
+// 2. Driver code to handle Judge0 stdin/stdout
+function main() {
+  // Read all data from standard input (stdin)
+  let input = fs.readFileSync(0, 'utf-8').trim();
+  
+  if (!input) {
+    console.log("true");
+    return;
+  }
+
+  if (input.startsWith('"') && input.endsWith('"')) {
+    input = input.slice(1, -1);
+  }
+
+  const result = isPalindrome(input);
+  console.log(result);
+}
+
+main();`,
+    PYTHON: `class Solution:
+    def isPalindrome(self, s: str) -> bool:
+        filtered_chars = [c.lower() for c in s if c.isalnum()]
+        return filtered_chars == filtered_chars[::-1]
+
+# --- PLATFORM INJECTED WRAPPER ---
+if __name__ == "__main__":
+    import sys
+    
+    # Read all input from stdin
+    input_str = sys.stdin.read().strip()
+    
+    # Strip surrounding quotes if your backend passes it as '"Panama"'
+    if len(input_str) >= 2 and input_str.startswith('"') and input_str.endswith('"'):
+        input_str = input_str[1:-1]
+        
+    sol = Solution()
+    result = sol.isPalindrome(input_str)
+    
+    print("true" if result else "false")`,
+    CPP: `#include <iostream>
+#include <string>
+#include <cctype>
+
+using namespace std;
+
+// --- USER SUBMITTED CODE STARTS ---
+bool isPalindrome(string s) {
+    string filtered = "";
+    for (char c : s) {
+        if (isalnum(c)) {
+            filtered += tolower(c);
+        }
+    }
+    
+    if (filtered.empty()) return true;
+    
+    int left = 0, right = filtered.length() - 1;
+    while (left < right) {
+        if (filtered[left] != filtered[right]) return false;
+        left++;
+        right--;
+    }
+    return true;
+}
+// --- USER SUBMITTED CODE ENDS ---
+
+// --- PLATFORM INJECTED WRAPPER ---
+int main() {
+    string input, temp;
+    
+    // Read all of stdin securely
+    while (getline(cin, temp)) {
+        input += temp;
+    }
+
+    // Strip surrounding quotes if your backend passes it as '"Panama"'
+    if (input.length() >= 2 && input.front() == '"' && input.back() == '"') {
+        input = input.substr(1, input.length() - 2);
+    }
+
+    // Execute and print
+    if (isPalindrome(input)) {
+        cout << "true";
+    } else {
+        cout << "false";
+    }
+
+    return 0;
+}`,
+  },
+};
+
+// Sample problem data for another type of question
 const sampledpData: ProblemFormValues = {
   title: "Climbing Stairs",
   description:
@@ -110,7 +338,7 @@ const sampledpData: ProblemFormValues = {
       explanation:
         "There are three ways to climb to the top:\n1. 1 step + 1 step + 1 step\n2. 1 step + 2 steps\n3. 2 steps + 1 step",
     },
-    C: {
+    CPP: {
       input: "n = 4",
       output: "5",
       explanation:
@@ -118,17 +346,53 @@ const sampledpData: ProblemFormValues = {
     },
   },
   codeSnippets: {
-    JAVASCRIPT: `/**\n* @param {number} n\n* @return {number}\n*/\nfunction climbStairs(n) {\n// Write your code here\n}\n\nconst readline = require('readline');\nconst rl = readline.createInterface({\ninput: process.stdin,\noutput: process.stdout,\nterminal: false\n});\n\nrl.on('line', (line) => {\nconst n = parseInt(line.trim());\nconst result = climbStairs(n);\n\nconsole.log(result);\nrl.close();\n});`,
-    PYTHON: `class Solution:\n  def climbStairs(self, n: int) -> int:\n      # Write your code here\n      pass\n\nif __name__ == "__main__":\n  import sys\n  n = int(sys.stdin.readline().strip())\n  sol = Solution()\n  result = sol.climbStairs(n)\n  print(result)`,
-    C: `#include <iostream>
+    JAVASCRIPT: `/**
+ * @param {number} n
+ * @return {number}
+ */
+function climbStairs(n) {
+    // Write your code here
+}
+
+const readline = require('readline');
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
+
+rl.on('line', (line) => {
+    const n = parseInt(line.trim());
+    const result = climbStairs(n);
+    console.log(result);
+    rl.close();
+});`,
+    PYTHON: `class Solution:
+    def climbStairs(self, n: int) -> int:
+        # Write your code here
+        pass
+
+if __name__ == "__main__":
+    import sys
+    n = int(sys.stdin.readline().strip())
+    sol = Solution()
+    result = sol.climbStairs(n)
+    print(result)`,
+    CPP: `#include <iostream>
 #include <string>
 #include <vector>
 
 using namespace std;
 
 // --- USER SUBMITTED CODE STARTS ---
+int climbStairs(int n) {
+    // Write your code here
+    
+}
+// --- USER SUBMITTED CODE ENDS ---
 
-// int main() {
+// --- PLATFORM INJECTED WRAPPER ---
+int main() {
     string input_raw;
     
     // Read the single token from stdin
@@ -157,9 +421,37 @@ using namespace std;
 }`,
   },
   referenceSolutions: {
-    JAVASCRIPT: `/**\n* @param {number} n\n* @return {number}\n*/\nfunction climbStairs(n) {\nif (n <= 2) return n;\nlet dp = new Array(n + 1);\ndp[1] = 1;\ndp[2] = 2;\nfor (let i = 3; i <= n; i++) {\n  dp[i] = dp[i - 1] + dp[i - 2];\n}\nreturn dp[n];\n}`,
-    PYTHON: `class Solution:\n  def climbStairs(self, n: int) -> int:\n      if n <= 2:\n          return n\n      dp = [0] * (n + 1)\n      dp[1] = 1\n      dp[2] = 2\n      for i in range(3, n + 1):\n          dp[i] = dp[i - 1] + dp[i - 2]\n      return dp[n]`,
-    C: `#include <iostream>
+    JAVASCRIPT: `/**
+ * @param {number} n
+ * @return {number}
+ */
+function climbStairs(n) {
+    if (n <= 2) return n;
+    
+    let dp = new Array(n + 1);
+    dp[1] = 1;
+    dp[2] = 2;
+    
+    for (let i = 3; i <= n; i++) {
+      dp[i] = dp[i - 1] + dp[i - 2];
+    }
+    
+    return dp[n];
+}`,
+    PYTHON: `class Solution:
+    def climbStairs(self, n: int) -> int:
+        if n <= 2:
+            return n
+            
+        dp = [0] * (n + 1)
+        dp[1] = 1
+        dp[2] = 2
+        
+        for i in range(3, n + 1):
+            dp[i] = dp[i - 1] + dp[i - 2]
+            
+        return dp[n]`,
+    CPP: `#include <iostream>
 #include <string>
 #include <vector>
 
@@ -215,139 +507,10 @@ int main() {
 }`,
   },
 };
-
-// Sample problem data for another type of question
-const sampleStringProblem: ProblemFormValues = {
-  title: "Valid Palindrome",
-  description:
-    "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward. Alphanumeric characters include letters and numbers. Given a string s, return true if it is a palindrome, or false otherwise.",
-  difficulty: "EASY",
-  tags: ["String", "Two Pointers"],
-  constraints:
-    "1 <= s.length <= 2 * 10^5\ns consists only of printable ASCII characters.",
-  hints:
-    "Consider using two pointers, one from the start and one from the end, moving towards the center.",
-  editorial:
-    "We can use two pointers approach to check if the string is a palindrome. One pointer starts from the beginning and the other from the end, moving towards each other.",
-  testCases: [
-    { input: "A man, a plan, a canal: Panama", output: "true" },
-    { input: "race a car", output: "false" },
-    { input: " ", output: "true" },
-  ],
-  examples: {
-    JAVASCRIPT: {
-      input: 's = "A man, a plan, a canal: Panama"',
-      output: "true",
-      explanation: '"amanaplanacanalpanama" is a palindrome.',
-    },
-    PYTHON: {
-      input: 's = "A man, a plan, a canal: Panama"',
-      output: "true",
-      explanation: '"amanaplanacanalpanama" is a palindrome.',
-    },
-    C: {
-      input: 's = "A man, a plan, a canal: Panama"',
-      output: "true",
-      explanation: '"amanaplanacanalpanama" is a palindrome.',
-    },
-  },
-  codeSnippets: {
-    JAVASCRIPT: `function isPalindrome(s) {\n  // Write your code here\n}`,
-    PYTHON: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        # Write your code here\n        pass`,
-    C: `#include <iostream>
-#include <string>
-#include <cctype>
-
-using namespace std;
-
-// --- USER SUBMITTED CODE STARTS ---
-// 
-int main() {
-    string input, temp;
-    
-    // Read all of stdin securely
-    while (getline(cin, temp)) {
-        input += temp;
-    }
-
-    // Strip surrounding quotes if your backend passes it as '"Panama"'
-    if (input.length() >= 2 && input.front() == '"' && input.back() == '"') {
-        input = input.substr(1, input.length() - 2);
-    }
-
-    // Execute and print
-    if (isPalindrome(input)) {
-        cout << "true";
-    } else {
-        cout << "false";
-    }
-
-    return 0;
-}
-// `,
-  },
-  referenceSolutions: {
-    JAVASCRIPT: `function isPalindrome(s) {\n  s = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n  let left = 0;\n  let right = s.length - 1;\n  while (left < right) {\n    if (s[left] !== s[right]) return false;\n    left++;\n    right--;\n  }\n  return true;\n}`,
-    PYTHON: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        filtered_chars = [c.lower() for c in s if c.isalnum()]\n        return filtered_chars == filtered_chars[::-1]`,
-    C: `#include <iostream>
-#include <string>
-#include <cctype>
-
-using namespace std;
-
-// --- USER SUBMITTED CODE STARTS ---
-bool isPalindrome(string s) {
-    string filtered = "";
-    for (char c : s) {
-        if (isalnum(c)) {
-            filtered += tolower(c);
-        }
-    }
-    
-    if (filtered.empty()) return true;
-    
-    int left = 0, right = filtered.length() - 1;
-    while (left < right) {
-        if (filtered[left] != filtered[right]) return false;
-        left++;
-        right--;
-    }
-    return true;
-}
-// --- USER SUBMITTED CODE ENDS ---
-
-// --- PLATFORM INJECTED WRAPPER ---
-int main() {
-    string input, temp;
-    
-    // Read all of stdin securely
-    while (getline(cin, temp)) {
-        input += temp;
-    }
-
-    // Strip surrounding quotes if your backend passes it as '"Panama"'
-    if (input.length() >= 2 && input.front() == '"' && input.back() == '"') {
-        input = input.substr(1, input.length() - 2);
-    }
-
-    // Execute and print
-    if (isPalindrome(input)) {
-        cout << "true";
-    } else {
-        cout << "false";
-    }
-
-    return 0;
-}
-            
-           `,
-  },
-};
-
 interface CodeEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
-  language?: "javascript" | "python" | "c";
+  language?: "javascript" | "python" | "cpp";
 }
 
 const CodeEditor = ({
@@ -358,7 +521,7 @@ const CodeEditor = ({
   const languageMap = {
     javascript: "javascript",
     python: "python",
-    c: "gcc",
+    cpp: "gcc",
   };
 
   return (
@@ -403,17 +566,33 @@ const CreateProblemForm = () => {
       examples: {
         JAVASCRIPT: { input: "", output: "", explanation: "" },
         PYTHON: { input: "", output: "", explanation: "" },
-        C: { input: "", output: "", explanation: "" },
+        CPP: { input: "", output: "", explanation: "" },
       },
       codeSnippets: {
-        JAVASCRIPT: "function solution() {\n  // Write your code here\n}",
+        JAVASCRIPT: `function solution() {\n  // Write your code here\n}function main() {
+  // Read all data from standard input (stdin)
+  const input = fs.readFileSync(0, 'utf-8').trim();
+  
+  if (!input) return;
+
+  // Split input by newlines if Piston passes multiple test cases
+  const lines = input.split(/\r?\n/);
+
+  for (let line of lines) {
+    // Call your function and print to stdout
+    const result = isPalindrome(line);
+    console.log(result);
+  }
+}
+
+main(); `,
         PYTHON: "def solution():\n    # Write your code here\n    pass",
-        C: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+        CPP: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
       },
       referenceSolutions: {
         JAVASCRIPT: "// Add your reference solution here",
         PYTHON: "# Add your reference solution here",
-        C: "// Add your reference solution here",
+        CPP: "// Add your reference solution here",
       },
     },
   });
@@ -457,7 +636,7 @@ const CreateProblemForm = () => {
       }
 
       toast.success(data.message || "Problem created successfully");
-      router.push("/problems");
+      router.push("/problem");
     } catch (error: any) {
       toast.error(error.message || "Failed to create problem");
     } finally {
@@ -721,7 +900,7 @@ const CreateProblemForm = () => {
             </Card>
 
             {/* Code Editor Sections */}
-            {(["JAVASCRIPT", "PYTHON", "C"] as const).map((language) => (
+            {(["JAVASCRIPT", "PYTHON", "CPP"] as const).map((language) => (
               <Card key={language} className="bg-blue-50/40 border-blue-100 shadow-sm">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl flex items-center gap-2 text-blue-800">
@@ -740,7 +919,7 @@ const CreateProblemForm = () => {
                         <CodeEditor
                           value={field.value}
                           onChange={field.onChange}
-                          language={language.toLowerCase() as "javascript" | "python" | "c"}
+                          language={language.toLowerCase() as "javascript" | "python" | "cpp"}
                         />
                       )}
                     />
@@ -759,7 +938,7 @@ const CreateProblemForm = () => {
                         <CodeEditor
                           value={field.value}
                           onChange={field.onChange}
-                          language={language.toLowerCase() as "javascript" | "python" | "c"}
+                          language={language.toLowerCase() as "javascript" | "python" | "cpp"}
                         />
                       )}
                     />

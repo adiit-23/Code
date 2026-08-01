@@ -1,4 +1,4 @@
-"use client";
+"use client"; // <-- This must be the very first line
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
@@ -11,7 +11,13 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-
+import AddToPlaylistModal from "./add-to-playlist";
+import CreatePlaylistModal from "./create-playlist";
+import {
+  createPlaylist,
+  deleteProblem,
+  addProblemToPlaylist,
+} from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -32,25 +38,49 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
+type DifficultyOption = "EASY" | "MEDIUM" | "HARD";
+type DifficultyFilter = DifficultyOption | "ALL";
+type TagFilter = string | "ALL";
 
-type ProblemsTableProps = {
-  problems: any[];
-  user?: any;
-};
+interface Problem {
+  id: string;
+  title: string;
+  tags?: string[];
+  difficulty: DifficultyOption;
+  solvedBy: any[];
+}
+
+interface User {
+  role?: string;
+}
+
+interface PlaylistFormData {
+  name: string;
+  description: string;
+}
+
+interface ProblemsTableProps {
+  problems?: Problem[];
+  user?: User;
+}
 
 const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
-  const [search, setSearch] = useState("");
-  const [difficulty, setDifficulty] = useState("ALL");
-  const [selectedTag, setSelectedTag] = useState("ALL");
-  const [currentPage, setCurrentPage] = useState(1);
-
+  const [search, setSearch] = useState<string>("");
+  const [difficulty, setDifficulty] = useState<DifficultyFilter>("ALL");
+  const [selectedTag, setSelectedTag] = useState<TagFilter>("ALL");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] =
+    useState<boolean>(false);
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
 
   // Extract all unique tags from problems
-  const allTags = useMemo<string[]>(() => {
+  const allTags = useMemo(() => {
     if (!Array.isArray(problems)) return [];
-    const tagsSet = new Set<string>();
-    problems.forEach((p) => p.tags?.forEach((t: string) => tagsSet.add(t)));
+    const tagsSet = new Set();
+    problems.forEach((p) => p.tags?.forEach((t:any) => tagsSet.add(t)));
     return Array.from(tagsSet);
   }, [problems]);
 
@@ -59,9 +89,13 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
 
   // Filter problems based on search, difficulty, and tags
   const filteredProblems = useMemo(() => {
-    return (problems || [])
+    // 1. Guarantee we are working with an array
+    const safeProblems = Array.isArray(problems) ? problems : [];
+
+    // 2. Apply all filters safely
+    return safeProblems
       .filter((problem) =>
-        (problem.title || "").toLowerCase().includes(search.toLowerCase())
+        problem.title.toLowerCase().includes(search.toLowerCase())
       )
       .filter((problem) =>
         difficulty === "ALL" ? true : problem.difficulty === difficulty
@@ -70,7 +104,6 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
         selectedTag === "ALL" ? true : problem.tags?.includes(selectedTag)
       );
   }, [problems, search, difficulty, selectedTag]);
-
   // Pagination logic
   const itemsPerPage = 5;
   const totalPages = Math.ceil(filteredProblems.length / itemsPerPage);
@@ -81,20 +114,78 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
     );
   }, [filteredProblems, currentPage]);
 
-  const handleDelete = async (problem:string) => {
-    
+  const handleDelete = async (id:string) => {
+    const result = await deleteProblem(id);
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.error);
+    }
   };
 
-  const handleCreatePlaylist = async () => {
-    
+  const handleCreatePlaylist = async (data:any) => {
+    try {
+      const response = await fetch("/api/playlists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsCreateModalOpen(false);
+        toast.success("Playlist created successfully");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: unknown) {
+      console.error("Error creating playlist:", error);
+      const message = error instanceof Error ? error.message : "Failed to create playlist";
+      toast.error(message);
+    }
   };
 
-  const handleAddToPlaylist = async () => {
-    
+  const handleAddToPlaylist = async (problemId:string, playlistId:string) => {
+    try {
+      const response = await fetch("/api/playlists/add-problem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problemId, playlistId }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsAddToPlaylistModalOpen(false);
+        toast.success("Problem added to playlist");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: unknown) {
+      console.error("Error adding to playlist:", error);
+      const message = error instanceof Error ? error.message : "Failed to add problem to playlist";
+      toast.error(message);
+    }
   };
 
+  const getDifficultyVariant = (difficulty:string) => {
+    switch (difficulty) {
+      case "EASY":
+        return "default";
+      case "MEDIUM":
+        return "secondary";
+      case "HARD":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
 
-  const getDifficultyColor = (difficulty:any) => {
+  const getDifficultyColor = (difficulty:string) => {
     switch (difficulty) {
       case "EASY":
         return "bg-green-100 text-green-800 hover:bg-green-100";
@@ -117,10 +208,12 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
             Manage and solve coding problems
           </p>
         </div>
-        <Button onClick={() => { }} className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+          {/* Added pointer-events-none to prevent icon hijacking click */}
+          <Plus className="h-4 w-4 pointer-events-none" />
           Create Playlist
         </Button>
+
       </div>
 
       {/* Filters */}
@@ -135,7 +228,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by title..."
                   value={search}
@@ -145,7 +238,10 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Select value={difficulty} onValueChange={setDifficulty}>
+              <Select
+                value={difficulty}
+                onValueChange={(value) => setDifficulty(value as DifficultyFilter)}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
@@ -160,15 +256,18 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                 </SelectContent>
               </Select>
 
-              <Select value={selectedTag} onValueChange={setSelectedTag}>
+              <Select
+                value={selectedTag}
+                onValueChange={(value) => setSelectedTag(value as TagFilter)}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select tag" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Tags</SelectItem>
                   {allTags.map((tag) => (
-                    <SelectItem key={tag} value={tag}>
-                      {tag}
+                    <SelectItem key={tag as string} value={tag as string}>
+                      {tag as string}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -194,11 +293,13 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
             <TableBody>
               {paginatedProblems.length > 0 ? (
                 paginatedProblems.map((problem) => {
-                  
+                  const isSolved = problem.solvedBy.length > 0;
                   return (
                     <TableRow key={problem.id}>
                       <TableCell>
                         <Checkbox
+                          checked={isSolved}
+                          disabled
                           className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                         />
                       </TableCell>
@@ -212,7 +313,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {(problem.tags || []).map((tag: string, idx: number) => (
+                          {(problem.tags || []).map((tag, idx) => (
                             <Badge
                               key={idx}
                               variant="outline"
@@ -241,21 +342,26 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                                 size="sm"
                                 onClick={() => handleDelete(problem.id)}
                               >
-                                <TrashIcon className="h-4 w-4" />
+                                {/* Added pointer-events-none */}
+                                <TrashIcon className="h-4 w-4 pointer-events-none" />
                               </Button>
                               <Button variant="outline" size="sm" disabled>
-                                <PencilIcon className="h-4 w-4" />
+                                <PencilIcon className="h-4 w-4 pointer-events-none" />
                               </Button>
                             </>
                           )}
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => { }}
+                            onClick={() => {
+                              setSelectedProblemId(problem.id);
+                              setIsAddToPlaylistModalOpen(true);
+                            }}
                             className="gap-2"
                           >
-                            <Bookmark className="h-4 w-4" />
-                            <span className="hidden sm:inline">Save</span>
+                            {/* Added pointer-events-none */}
+                            <Bookmark className="h-4 w-4 pointer-events-none" />
+                            <span className="hidden sm:inline pointer-events-none">Save</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -314,7 +420,19 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
         </div>
       )}
 
-      
+      {/* Modals */}
+      <CreatePlaylistModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreatePlaylist}
+      />
+
+      <AddToPlaylistModal
+        isOpen={isAddToPlaylistModalOpen}
+        onClose={() => setIsAddToPlaylistModalOpen(false)}
+        onSubmit={handleAddToPlaylist}
+        problemId={selectedProblemId}
+      />
     </div>
   );
 };

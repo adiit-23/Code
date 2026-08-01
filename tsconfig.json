@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "lib/judge0.js", "app/(root)/problem/page.jsx", "modules/problems/actions/index.js", "modules/problems/components/test-case-table.jsx", "modules/problems/components/problem-table.jsx", "modules/problems/components/add-to-playlist.jsx", "modules/problems/components/create-playlist.jsx"  ],
   "exclude": ["node_modules"]
 }
