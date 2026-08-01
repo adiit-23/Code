@@ -24,7 +24,9 @@ export const getAllProblems = async () => {
             userId: data.id,
           },
         },
-      },
+        problemsPlaylists: true,
+        },
+    
       orderBy: {
         createdAt: 'desc'
       }

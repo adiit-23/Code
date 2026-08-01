@@ -1,5 +1,5 @@
 "use server";
-import {prisma} from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
 
 
@@ -66,11 +66,13 @@ export const getCurrentUserData= async()=>{
             where:{
                 clerkId:user?.id
             },
-            select:{
-                    id:true,
-                    role:true
+            include:{
+                    submissions: true,
+                    solvedProblems: true,
+                    playlists: true
             }
         }) 
+        console.log(data);
         return data;
     }
     catch(e){

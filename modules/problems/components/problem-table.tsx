@@ -171,7 +171,29 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
       toast.error(message);
     }
   };
+  const handleRemoveFromPlaylist = async (problemId: string, playlistId: string) => {
+  try {
+    const response = await fetch("/api/playlists/remove-problem", {
+      method: "DELETE", 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problemId, playlistId }),
+    });
 
+    const result = await response.json();
+
+    if (result.success) {
+      // Optional: Remove this line if you want the menu to stay open after removing
+      setIsAddToPlaylistModalOpen(false); 
+      toast.success("Problem removed from playlist");
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error: unknown) {
+    console.error("Error removing from playlist:", error);
+    const message = error instanceof Error ? error.message : "Failed to remove problem from playlist";
+    toast.error(message);
+  }
+};
   const getDifficultyVariant = (difficulty:string) => {
     switch (difficulty) {
       case "EASY":
@@ -197,7 +219,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
         return "";
     }
   };
-
+  
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 p-6">
       {/* Header */}
@@ -294,6 +316,8 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
               {paginatedProblems.length > 0 ? (
                 paginatedProblems.map((problem) => {
                   const isSolved = problem.solvedBy.length > 0;
+                  // problemsPlaylists may not be declared on Problem type in some builds
+                  const isInPlaylist = Array.isArray((problem as any).problemsPlaylists) && (problem as any).problemsPlaylists.length > 0;
                   return (
                     <TableRow key={problem.id}>
                       <TableCell>
@@ -345,24 +369,26 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                                 {/* Added pointer-events-none */}
                                 <TrashIcon className="h-4 w-4 pointer-events-none" />
                               </Button>
-                              <Button variant="outline" size="sm" disabled>
-                                <PencilIcon className="h-4 w-4 pointer-events-none" />
-                              </Button>
                             </>
                           )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedProblemId(problem.id);
-                              setIsAddToPlaylistModalOpen(true);
-                            }}
-                            className="gap-2"
-                          >
-                            {/* Added pointer-events-none */}
-                            <Bookmark className="h-4 w-4 pointer-events-none" />
-                            <span className="hidden sm:inline pointer-events-none">Save</span>
-                          </Button>
+                         <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedProblemId(problem.id);
+                            setIsAddToPlaylistModalOpen(true);
+                          }}
+                          className="gap-2"
+                        >
+                          <Bookmark 
+                            className="h-4 w-4" 
+                            // 2. Conditionally apply the fill
+                            fill={isInPlaylist ? "currentColor" : "none"} 
+                            // Optional: change the text color slightly if it's saved
+                            color={isInPlaylist ? "currentColor" : "currentColor"} 
+                          />
+                          {isInPlaylist ? "Saved" : "Save"}
+                        </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -431,6 +457,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
         isOpen={isAddToPlaylistModalOpen}
         onClose={() => setIsAddToPlaylistModalOpen(false)}
         onSubmit={handleAddToPlaylist}
+        onRemove={handleRemoveFromPlaylist}
         problemId={selectedProblemId}
       />
     </div>

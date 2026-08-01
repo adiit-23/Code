@@ -26,7 +26,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+
 export default async function Home() {
+  await onboardUser();
   const { userId } = await auth()
   
   const features = [

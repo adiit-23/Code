@@ -10,16 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Check } from "lucide-react";
+import { Plus,Minus } from "lucide-react";
 import { toast } from "sonner";
-import { Playlist }  from  "@prisma/client";
+import { Playlist } from "@prisma/client";
 
-const AddToPlaylistModal = ({ isOpen, onClose, onSubmit, problemId}:any) => {
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+
+const AddToPlaylistModal = ({ isOpen, onClose, onSubmit, onRemove, problemId}:any) => {
+  const [playlists, setPlaylists] = useState<(
+  Playlist & { problems?: { problemId: string }[] }
+)[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  if (!playlists) {
-  throw new Error("Playlists not found");
-}
+  // playlists may include relation `problemsPlaylists` from the API
 
   useEffect(() => {
     const loadPlaylists = async () => {
@@ -46,6 +47,13 @@ const AddToPlaylistModal = ({ isOpen, onClose, onSubmit, problemId}:any) => {
     try {
       setIsLoading(true);
       await onSubmit(problemId, playlistId);
+      setPlaylists((prevPlaylists) =>
+      prevPlaylists.map((p) =>
+      p.id === playlistId
+        ? { ...p, problems: [...(p.problems || []), { problemId }] }
+        : p
+    )
+  );if (onSubmit) onSubmit(problemId, playlistId);
       onClose();
     } catch (error) {
       console.error('Error adding to playlist:', error);
@@ -54,24 +62,52 @@ const AddToPlaylistModal = ({ isOpen, onClose, onSubmit, problemId}:any) => {
       setIsLoading(false);
     }
   };
+  const handleRemoveFromPlaylist = async (playlistId: string) => {
+  try {
+    setIsLoading(true);
+    await onRemove(problemId, playlistId); // Call the remove function passed from the parent
+    // You can choose to call onClose() here, or leave it open if the user wants to remove it from multiple playlists
+    setPlaylists((prevPlaylists) =>
+    prevPlaylists.map((p) =>
+      p.id === playlistId
+        ? { ...p, problems: p.problems?.filter((prob) => prob.problemId !== problemId) }
+        : p
+    )
+  );if (onRemove) onRemove(problemId, playlistId);
+    onClose(); 
+  } catch (error) {
+    console.error('Error removing from playlist:', error);
+    toast.error("Failed to remove problem from playlist");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add to Playlist</DialogTitle>
-          <DialogDescription>
-            Choose a playlist to add this problem to
-          </DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="max-h-[300px] w-full pr-4">
-          {playlists.length > 0 ? (
-            <div className="space-y-2">
-              {playlists.map((playlist) => (
+return (
+  <Dialog open={isOpen} onOpenChange={onClose}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Add to Playlist</DialogTitle>
+        <DialogDescription>
+          Choose a playlist to add this problem to
+        </DialogDescription>
+      </DialogHeader>
+      
+      <ScrollArea className="max-h-[300px] w-full pr-4">
+        {playlists.length > 0 ? (
+          <div className="space-y-2">
+            {playlists.map((playlist) => {
+              // Calculate isAdded for each playlist in the list
+              console.log(`Playlist: ${playlist.name}`, playlist.problems);
+              console.log(`Comparing DB problemId:`, playlist.problems?.[0]?.problemId, `with Modal problemId:`, problemId);
+              const isAdded = playlist.problems?.some((p: any) => p.problemId === problemId);
+
+              return (
                 <div
                   key={playlist.id}
                   className="flex items-center justify-between p-2 rounded-lg border hover:bg-accent"
                 >
+                  {/* Playlist Info */}
                   <div>
                     <h3 className="font-medium">{playlist.name}</h3>
                     {playlist.description && (
@@ -80,36 +116,56 @@ const AddToPlaylistModal = ({ isOpen, onClose, onSubmit, problemId}:any) => {
                       </p>
                     )}
                   </div>
+
+                  {/* Dynamic Add/Remove Button */}
                   <Button
                     size="sm"
-                    onClick={() => handleAddToPlaylist(playlist.id)}
+                    variant={isAdded ? "destructive" : "default"}
+                    onClick={() => {
+                      if (isAdded) {
+                        handleRemoveFromPlaylist(playlist.id);
+                      } else {
+                        handleAddToPlaylist(playlist.id);
+                      }
+                    }}
                     disabled={isLoading}
+                    className="gap-2"
                   >
-                    <Plus className="h-4 w-4" />
-                    Add
+                    {isAdded ? (
+                      <>
+                        <Minus className="h-4 w-4" />
+                        Remove
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" />
+                        Add
+                      </>
+                    )}
                   </Button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>No playlists found. Create one first!</p>
-              <Button
-                className="mt-2"
-                variant="outline"
-                onClick={() => {
-                  onClose();
-                  // You can emit an event or use a callback here to open create playlist modal
-                }}
-              >
-                Create Playlist
-              </Button>
-            </div>
-          )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
-  );
-};
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            <p>No playlists found. Create one first!</p>
+            <Button
+              className="mt-2"
+              variant="outline"
+              onClick={() => {
+                onClose();
+                // You can emit an event or use a callback here to open create playlist modal
+              }}
+            >
+              Create Playlist
+            </Button>
+          </div>
+        )}
+      </ScrollArea>
+    </DialogContent>
+  </Dialog>
+);
+}
 
 export default AddToPlaylistModal;
