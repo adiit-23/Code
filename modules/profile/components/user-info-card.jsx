@@ -12,7 +12,6 @@ const UserInfoCard = ({ userData }) => {
       day: 'numeric',
     });
   };
-  console.log(userData);
   if (!userData) {
     // You can return null, an error message, or a loading skeleton here.
     return (

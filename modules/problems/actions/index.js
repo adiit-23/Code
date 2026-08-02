@@ -1,6 +1,6 @@
 "use server";
 import { prisma } from '@/lib/db';
-import { UserRole } from '@/lib/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 import { currentUser } from '@clerk/nextjs/server';
 import { revalidatePath } from "next/cache";
 import { getLanguageName,submitBatch,pollBatchResults } from '@/lib/judge0';
@@ -17,20 +17,27 @@ export const getAllProblems = async () => {
         id: true,
       },
     });
-    const problems = await prisma.problem.findMany({
-      include: {
-        solvedBy: {
-          where: {
-            userId: data.id,
-          },
-        },
-        problemsPlaylists: true,
-        },
-    
-      orderBy: {
-        createdAt: 'desc'
+  const problems = await prisma.problem.findMany({
+  include: {
+    // 1. First relation
+    solvedBy: {
+      where: {
+        userId: data.id,
+      },
+    },
+    // 2. Second relation (No extra "include:" keyword needed here!)
+    problemsPlaylists: {
+      where: {
+        playlist: {
+          userId: data.id // ONLY includes it if the playlist belongs to THIS user
+        }
       }
-    });
+    }
+  },
+  orderBy: {
+    createdAt: 'desc'
+  }
+});
 
     return { success: true, data: problems };
   } catch (error) {
@@ -192,34 +199,18 @@ export const addProblemToPlaylist = async (problemId, playlistId) => {
 }
 
 
-export const executeCode = async (source_code, language_id, stdin, expected_outputs, id)=>{
+export const executeOnly = async (source_code, language_id, stdin, expected_outputs) => {
+  if (
+    !Array.isArray(stdin) ||
+    stdin.length === 0 ||
+    !Array.isArray(expected_outputs) ||
+    expected_outputs.length !== stdin.length
+  ) {
+    return { success: false, error: "Invalid test cases" };
+  }
 
-    try {
-        const user = await currentUser();
-        
-        // 1. Guard against unauthenticated requests
-        if (!user || !user.id) {
-            return NextResponse.json({ error: "Unauthorized user" }, { status: 401 });
-        }
-
-        const prismaUser = await prisma.user.findUnique({
-            where: { clerkId: user.id }
-        });
-
-        if (!prismaUser) {
-             return NextResponse.json({ error: "User not found in database" }, { status: 404 });
-        }
-   
-    if (
-      !Array.isArray(stdin) ||
-      stdin.length === 0 ||
-      !Array.isArray(expected_outputs) ||
-      expected_outputs.length !== stdin.length
-    ) {
-      return { success: false, error: "Invalid test cases" };
-    }
-
-      const submissions = stdin.map((input) => ({
+  try {
+    const submissions = stdin.map((input) => ({
       source_code,
       language_id,
       stdin: input,
@@ -227,19 +218,18 @@ export const executeCode = async (source_code, language_id, stdin, expected_outp
       wait: false,
     }));
 
-     const submitResponse = await submitBatch(submissions);
+    const submitResponse = await submitBatch(submissions);
     const tokens = submitResponse.map((res) => res.token);
 
-        const results = await pollBatchResults(tokens);
+    const results = await pollBatchResults(tokens);
 
     let allPassed = true;
     const detailedResults = results.map((result, i) => {
       // Fallback to "" instead of null so it compares strings to strings perfectly
-    const stdout = result.stdout ? String(result.stdout).trim() : "";
-    const expected_output = expected_outputs[i] ? String(expected_outputs[i]).trim() : "";
+      const stdout = result.stdout ? String(result.stdout).trim() : "";
+      const expected_output = expected_outputs[i] ? String(expected_outputs[i]).trim() : "";
 
-    const passed = stdout === expected_output;
-
+      const passed = stdout === expected_output;
       if (!passed) allPassed = false;
 
       return {
@@ -255,7 +245,51 @@ export const executeCode = async (source_code, language_id, stdin, expected_outp
       };
     });
 
-     const submission = await prisma.submission.create({
+    return { 
+      success: true, 
+      allPassed, 
+      detailedResults 
+    };
+  } catch (error) {
+    console.error("🔥 EXECUTION ERROR:", error.message || error);
+    return { success: false, error: "Code execution failed" };
+  }
+};
+
+
+/**
+ * 2. EXECUTION + SUBMISSION
+ * Validates the user, executes the code, and saves the submission/results to Prisma.
+ * Useful for a "Submit" button.
+ */
+export const executeAndSubmit = async (source_code, language_id, stdin, expected_outputs, id) => {
+  try {
+    const user = await currentUser();
+
+    // 1. Guard against unauthenticated requests
+    if (!user || !user.id) {
+      return NextResponse.json({ error: "Unauthorized user" }, { status: 401 });
+    }
+
+    const prismaUser = await prisma.user.findUnique({
+      where: { clerkId: user.id },
+    });
+
+    if (!prismaUser) {
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
+    }
+
+    // 2. Run the code execution
+    const executionData = await executeOnly(source_code, language_id, stdin, expected_outputs);
+
+    if (!executionData.success) {
+      return { success: false, error: executionData.error };
+    }
+
+    const { allPassed, detailedResults } = executionData;
+
+    // 3. Save Submission to Database
+    const submission = await prisma.submission.create({
       data: {
         userId: prismaUser.id,
         problemId: id,
@@ -279,7 +313,7 @@ export const executeCode = async (source_code, language_id, stdin, expected_outp
       },
     });
 
-      // 🏆 7. Mark problem as solved if all test cases passed
+    // 4. Mark problem as solved if all test cases passed
     if (allPassed) {
       await prisma.problemSolved.upsert({
         where: {
@@ -289,8 +323,37 @@ export const executeCode = async (source_code, language_id, stdin, expected_outp
         create: { userId: prismaUser.id, problemId: id },
       });
     }
+    const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today
 
-     const testCaseResults = detailedResults.map((result) => ({
+      const lastSubmissionDate = prismaUser.lastSubmissionDate 
+        ? new Date(prismaUser.lastSubmissionDate) 
+        : null;
+
+      if (lastSubmissionDate) {
+        lastSubmissionDate.setHours(0, 0, 0, 0);
+      }
+
+      // If they haven't submitted anything today, update the streak
+      if (!lastSubmissionDate || lastSubmissionDate < today) {
+        
+        // Calculate if it's consecutive (submitted yesterday)
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const isConsecutive = lastSubmissionDate && lastSubmissionDate.getTime() === yesterday.getTime();
+
+        await prisma.user.update({
+          where: { id: prismaUser.id },
+          data: {
+            // If submitted yesterday, add 1. Otherwise, reset to 1.
+            streak: isConsecutive ? prismaUser.streak + 1 : 1, 
+            lastSubmissionDate: new Date(), // Set to current time
+          }
+        });
+      }
+    // 5. Save detailed test case results
+    const testCaseResults = detailedResults.map((result) => ({
       submissionId: submission.id,
       testCase: result.testCase,
       passed: result.passed,
@@ -305,22 +368,24 @@ export const executeCode = async (source_code, language_id, stdin, expected_outp
 
     await prisma.testCaseResult.createMany({ data: testCaseResults });
 
-     const submissionWithTestCases = await prisma.submission.findUnique({
+    // 6. Fetch the complete submission to return
+    const submissionWithTestCases = await prisma.submission.findUnique({
       where: { id: submission.id },
       include: { testCases: true },
     });
 
     return { success: true, submission: submissionWithTestCases };
-}catch (error) {
-        // 2. Log the actual Prisma error message, not just the object!
-        console.error("🔥 PRISMA ERROR:", error.message || error);
-        
-        return NextResponse.json(
-            { error: "Internal server error" }, 
-            { status: 500 }
-        );
-    }
-}
+    
+  } catch (error) {
+    // Log the actual Prisma error message
+    console.error("🔥 DB/SUBMISSION ERROR:", error.message || error);
+
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+};
 export const getAllSubmissionByCurrentUserForProblem = async (problemId) => {
     const user = await currentUser();
     const userId = await prisma.user.findUnique({

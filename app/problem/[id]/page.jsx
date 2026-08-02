@@ -2,7 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import Editor from '@monaco-editor/react';
-import { executeCode, getAllSubmissionByCurrentUserForProblem, getProblemById } from '@/modules/problems/actions';
+import { executeOnly, executeAndSubmit, getAllSubmissionByCurrentUserForProblem, getProblemById } from '@/modules/problems/actions';
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -88,30 +88,61 @@ const ProblemIdPage = ({ params }) => {
     }
   }, [selectedLanguage, problem]);
 
+  const getExecutionPayload = () => {
+  return {
+    language_id: getJudge0laguageId(selectedLanguage),
+    stdin: problem.testCases.map((tc) => tc.input),
+    expected_outputs: problem.testCases.map((tc) => tc.output)
+  };
+};
+ // 1. RUN CODE ONLY (Execution without saving to DB)
   const handleRun = async () => {
-
-   try {
-    setIsRunning(true);
-      const language_id = getJudge0laguageId(selectedLanguage);
-      const stdin = problem.testCases.map((tc) => tc.input);
-      const expected_outputs = problem.testCases.map((tc) => tc.output);
-      const res = await executeCode(code, language_id, stdin, expected_outputs, problem.id);
+    try {
+      setIsRunning(true);
+      const { language_id, stdin, expected_outputs } = getExecutionPayload();
+      
+      // Note: executeOnly doesn't need problem.id
+      const res = await executeOnly(code, language_id, stdin, expected_outputs);
+      
       setExecutionResponse(res);
-      if(res.success){
-        toast.success("Code executed successfully");
+      
+      if (res.success) {
+        toast.success("Code ran successfully!");
+      } else {
+        toast.error(res.error || "Failed to run code.");
       }
     } catch (error) {
-      console.log("Error executing code", error);
-      toast.error("Error executing code");
-    }
-    finally {
+      console.log("Error running code", error);
+      toast.error("Error running code.");
+    } finally {
       setIsRunning(false);
     }
   };
 
-  const handleSubmit =  () => {
-    
-
+  // 2. SUBMIT CODE (Execution + Saving to DB)
+  const handleSubmit = async () => {
+    try {
+      // You might want to use a separate state like setIsSubmitting(true) 
+      // if you have distinct loading spinners for Run vs Submit buttons
+      setIsRunning(true); 
+      const { language_id, stdin, expected_outputs } = getExecutionPayload();
+      
+      const res = await executeAndSubmit(code, language_id, stdin, expected_outputs, problem.id);
+      
+      setExecutionResponse(res);
+      setIsSubmitting(true);
+      if (res.success) {
+        toast.success("Code submitted successfully!");
+      } else {
+        toast.error(res.error || "Failed to submit code.");
+      }
+    } catch (error) {
+      console.log("Error submitting code", error);
+      toast.error("Error submitting code.");
+    } finally {
+      setIsRunning(false);
+      setIsSubmitting(false);
+    }
   };
 
   if(!problem){

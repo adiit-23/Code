@@ -30,6 +30,8 @@ model User{
   submissions Submission[]       
   solvedProblems ProblemSolved[]
   playlists   Playlist[]
+  streak             Int       @default(0)
+  lastSubmissionDate DateTime?
   @@index([role])
 }
 
