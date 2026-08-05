@@ -210,13 +210,15 @@ export const executeOnly = async (source_code, language_id, stdin, expected_outp
   }
 
   try {
-    const submissions = stdin.map((input) => ({
-      source_code,
-      language_id,
-      stdin: input,
-      base64_encoded: false,
-      wait: false,
-    }));
+    const encodeBase64 = (str) => Buffer.from(str || "").toString("base64");
+
+  const submissions = stdin.map((input) => ({
+  source_code: encodeBase64(source_code),
+  language_id: Number(language_id), // Ensure it is an integer (e.g., 71 for Python)
+  stdin: encodeBase64(String(input).trim() + "\n"),
+  base64_encoded: true,
+  wait: false,
+}));
 
     const submitResponse = await submitBatch(submissions);
     const tokens = submitResponse.map((res) => res.token);

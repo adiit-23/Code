@@ -1,4 +1,4 @@
-import { UserRole } from '@/lib/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 import { getCurrentUserData } from '@/modules/auth/actions';
 import { Button } from '@/components/ui/button';
 import { currentUser } from '@clerk/nextjs/server'

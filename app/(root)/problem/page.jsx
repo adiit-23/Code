@@ -2,8 +2,11 @@ import { getAllProblems } from '@/modules/problems/actions';
 import ProblemsTable from "@/modules/problems/components/problem-table"
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { auth } from '@clerk/nextjs/server';
+
 
 const ProblemsPage = async () => {
+  await auth.protect();
   try {
     const user = await currentUser();
     let dbUser = null;

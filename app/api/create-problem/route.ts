@@ -1,4 +1,4 @@
-import { UserRole } from "@/lib/generated/prisma/enums";
+import { UserRole } from "@prisma/client";
 import { currentUserRole, getCurrentUserData } from "@/modules/auth/actions";
 import { CurrencyBtcIcon } from "@phosphor-icons/react";
 import { NextRequest, NextResponse } from "next/server";
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
             
             // 3. Submit to Judge0 to get the execution tokens
             const submitResponse = await submitBatch(submissions);
-            const tokens = submitResponse.map((res) => res.token);
+            const tokens = submitResponse.map((res:any) => res.token);
             
             // 4. THE POLLING LOOP: Wait for Judge0 workers to finish evaluating
             let results: any[] = [];

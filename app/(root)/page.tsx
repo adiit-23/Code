@@ -1,9 +1,9 @@
 import Image from "next/image";
-import {Button} from "@/components/ui/button";
-import { redirect } from 'next/navigation'
-import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { redirect } from 'next/navigation';
+import { UserButton, SignInButton, SignUpButton } from "@clerk/nextjs";
 import { auth } from '@clerk/nextjs/server';
-import { ClerkProvider,Show } from '@clerk/nextjs';
 import { onboardUser } from "@/modules/auth/actions";
 import {
   Code2,
@@ -26,11 +26,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-
 export default async function Home() {
   await onboardUser();
-  const { userId } = await auth()
-  
+  const { userId } = await auth();
+
   const features = [
     {
       icon: <Code2 className="w-6 h-6" />,
@@ -91,7 +90,6 @@ export default async function Home() {
       color: "amber",
     },
   ];
-  
 
   return (
     <div className="min-h-screen transition-colors mt-24">
@@ -111,7 +109,6 @@ export default async function Home() {
           <h1 className="text-2xl md:text-5xl lg:text-6xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-8">
             Master{" "}
             <span className="relative inline-block">
-              {/* Pastel Pink Block */}
               <span className="px-6 py-3 bg-rose-200 dark:bg-rose-300/90 text-rose-900 rounded-2xl transform -rotate-1 inline-block shadow-lg shadow-rose-200/50">
                 Problem
               </span>
@@ -120,7 +117,6 @@ export default async function Home() {
             <br />
             with{" "}
             <span className="relative inline-block">
-              {/* Pastel Indigo/Periwinkle Block */}
               <span className="px-6 py-3 bg-indigo-200 dark:bg-indigo-300/90 text-indigo-900 rounded-2xl transform rotate-1 inline-block shadow-lg shadow-indigo-200/50">
                 Code
               </span>
@@ -136,20 +132,40 @@ export default async function Home() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            {/* Start Coding Now Button */}
+            {userId ? (
+              <Button
+                asChild
+                size="lg"
+                className="bg-rose-300 hover:bg-rose-400 dark:bg-rose-400 dark:hover:bg-rose-500 text-rose-950 dark:text-rose-950 font-semibold shadow-md shadow-rose-200/50 dark:shadow-rose-900/20 transform hover:-translate-y-0.5 transition-all rounded-full px-8 cursor-pointer"
+              >
+                <Link href="/problems">
+                  <Play className="w-5 h-5 mr-2 opacity-80" />
+                  Start Coding Now
+                  <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform opacity-80" />
+                </Link>
+              </Button>
+            ) : (
+              <SignInButton mode="modal">
+                <Button
+                  size="lg"
+                  className="bg-rose-300 hover:bg-rose-400 dark:bg-rose-400 dark:hover:bg-rose-500 text-rose-950 dark:text-rose-950 font-semibold shadow-md shadow-rose-200/50 dark:shadow-rose-900/20 transform hover:-translate-y-0.5 transition-all rounded-full px-8 cursor-pointer"
+                >
+                  <Play className="w-5 h-5 mr-2 opacity-80" />
+                  Start Coding Now
+                  <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform opacity-80" />
+                </Button>
+              </SignInButton>
+            )}
+
+            {/* Browse Problems Button */}
             <Button
-              size="lg"
-              className="bg-rose-300 hover:bg-rose-400 dark:bg-rose-400 dark:hover:bg-rose-500 text-rose-950 dark:text-rose-950 font-semibold shadow-md shadow-rose-200/50 dark:shadow-rose-900/20 transform hover:-translate-y-0.5 transition-all rounded-full px-8"
-            >
-              <Play className="w-5 h-5 mr-2 opacity-80" />
-              Start Coding Now
-              <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform opacity-80" />
-            </Button>
-            <Button
+              asChild
               variant="outline"
               size="lg"
-              className="border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full px-8 transition-colors font-semibold"
+              className="border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full px-8 transition-colors font-semibold cursor-pointer"
             >
-              Browse Problems
+              <Link href="/problem">Browse Problems</Link>
             </Button>
           </div>
 
@@ -287,15 +303,28 @@ export default async function Home() {
             Join thousands of developers who are improving their skills every
             day
           </p>
-          <Button
-            size="lg"
-            className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-300 dark:text-indigo-950 dark:hover:bg-indigo-400 shadow-xl rounded-full px-10 py-6 text-lg transition-transform hover:scale-105"
-          >
-            Get Started for Free
-          </Button>
+
+          {/* Get Started / Sign Up Button */}
+          {userId ? (
+            <Button
+              asChild
+              size="lg"
+              className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-300 dark:text-indigo-950 dark:hover:bg-indigo-400 shadow-xl rounded-full px-10 py-6 text-lg transition-transform hover:scale-105 cursor-pointer"
+            >
+              <Link href="/problem">Go to Problems</Link>
+            </Button>
+          ) : (
+            <SignUpButton mode="modal">
+              <Button
+                size="lg"
+                className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-300 dark:text-indigo-950 dark:hover:bg-indigo-400 shadow-xl rounded-full px-10 py-6 text-lg transition-transform hover:scale-105 cursor-pointer"
+              >
+                Get Started for Free
+              </Button>
+            </SignUpButton>
+          )}
         </div>
       </section>
     </div>
   );
-   
 }

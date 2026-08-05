@@ -370,7 +370,6 @@ rl.on('line', (line) => {
     PYTHON: `class Solution:
     def climbStairs(self, n: int) -> int:
         # Write your code here
-        pass
 
 if __name__ == "__main__":
     import sys
@@ -437,7 +436,21 @@ function climbStairs(n) {
     }
     
     return dp[n];
-}`,
+    }
+  const readline = require('readline');
+  const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: false
+});
+
+rl.on('line', (line) => {
+    const n = parseInt(line.trim());
+    const result = climbStairs(n);
+    console.log(result);
+    rl.close();
+});
+`,
     PYTHON: `class Solution:
     def climbStairs(self, n: int) -> int:
         if n <= 2:
@@ -450,7 +463,14 @@ function climbStairs(n) {
         for i in range(3, n + 1):
             dp[i] = dp[i - 1] + dp[i - 2]
             
-        return dp[n]`,
+        return dp[n]
+
+if __name__ == "__main__":
+    import sys
+    n = int(sys.stdin.readline().strip())
+    sol = Solution()
+    result = sol.climbStairs(n)
+    print(result)`,
     CPP: `#include <iostream>
 #include <string>
 #include <vector>
