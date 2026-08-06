@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: api_service
+    restart: always
+    environment:
+      - PORT=2358
+    # Keep port 2358 internal to the Docker network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - "80:80"        # Exposed public HTTP port
+      - "2358:2358"    # Optional: direct external access to 2358 if needed
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
