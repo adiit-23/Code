@@ -29,20 +29,6 @@ A modern, high-performance web platform designed for practicing data structures 
 * **ORM**: Prisma ORM
 * **Code Execution**: Judge0 API (Proxied via Nginx)
 * **Containerization**: Docker, Nginx
-# AlgoVerse 🚀
-
-An interactive coding and algorithm practice platform built with Next.js, designed to handle real-time code execution and scalable user management.
-
-## 🛠 Tech Stack
-
-*   **Frontend & API:** Next.js (App Router), React, Tailwind CSS
-*   **Database:** Neon PostgreSQL
-*   **ORM:** Prisma
-*   **Authentication:** Clerk
-*   **Code Execution Engine:** Judge0 (Containerized via Docker)
-*   **Deployment:** Vercel (Frontend) / VPS (Judge0)
-
----
 
 ## 📋 Prerequisites
 
