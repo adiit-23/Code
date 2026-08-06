@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { Flame } from "lucide-react";
-
+export const dynamic = "force-dynamic";
 interface UserStatsProps {
   easy: number;
   medium: number;

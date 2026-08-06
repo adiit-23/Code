@@ -8,7 +8,7 @@ import React from 'react';
 import  Link  from 'next/link';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import CreateProblemForm from '@/modules/problems/components/create-problem-for';
-
+export const dynamic = "force-dynamic";
 const CreateProblemPage = async () => {
     const user=await getCurrentUserData();
     // @ts-ignore

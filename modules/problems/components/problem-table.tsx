@@ -35,7 +35,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-
+export const dynamic = "force-dynamic";
 type DifficultyOption = "EASY" | "MEDIUM" | "HARD";
 type DifficultyFilter = DifficultyOption | "ALL";
 type TagFilter = string | "ALL";

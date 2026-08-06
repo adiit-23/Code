@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, XCircle, Clock, Cpu, Code, Calendar } from "lucide-react";
-
+export const dynamic = "force-dynamic";
 export const SubmissionHistory = ({ submissions = [] }) => {
   if (!submissions.length) {
     return (

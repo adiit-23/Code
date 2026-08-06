@@ -3,7 +3,7 @@ import { User, Mail, Calendar, Shield } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-
+export const dynamic = "force-dynamic";
 const UserInfoCard = ({ userData }) => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

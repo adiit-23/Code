@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Terminal, Cpu, Shield, Layers, Code2, Server, Moon, Sun, Laptop, Database } from 'lucide-react';
-
+export const dynamic = "force-dynamic";
 export default function AboutPage() {
   const [isDark, setIsDark] = useState(false);
 

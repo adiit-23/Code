@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus,Minus } from "lucide-react";
 import { toast } from "sonner";
 import { Playlist } from "@prisma/client";
-
+export const dynamic = "force-dynamic";
 
 const AddToPlaylistModal = ({ isOpen, onClose, onSubmit, onRemove, problemId}:any) => {
   const [playlists, setPlaylists] = useState<(

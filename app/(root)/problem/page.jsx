@@ -3,7 +3,7 @@ import ProblemsTable from "@/modules/problems/components/problem-table"
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { auth } from '@clerk/nextjs/server';
-
+export const dynamic = "force-dynamic";
 
 const ProblemsPage = async () => {
   await auth.protect();

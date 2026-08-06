@@ -21,7 +21,7 @@ import { getJudge0laguageId } from '@/lib/judge0';
 import { toast } from 'sonner';
 import { SubmissionHistory } from '@/modules/problems/components/submission-history';
 import Link from 'next/link';
-
+export const dynamic = "force-dynamic";
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
     case 'EASY':

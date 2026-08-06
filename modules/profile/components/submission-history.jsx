@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from "@/components/ui/scroll-area";
-
+export const dynamic = "force-dynamic";
 const SubmissionsHistory= ({ submissions }) => {
   const getStatusIcon = (status) => {
     switch (status) {

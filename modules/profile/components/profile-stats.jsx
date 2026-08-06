@@ -2,7 +2,7 @@ import React from 'react';
 import { BarChart3, Target, Clock, Award } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
-
+export const dynamic = "force-dynamic";
 
 const ProfileStats = ({ submissions, solvedCount, playlistCount }) => {
   const acceptedSubmissions = submissions.filter(s => s.status === 'Accepted').length;

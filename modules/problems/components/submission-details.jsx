@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CpuIcon, Code, CheckCircle2, XCircle } from "lucide-react";
-
+export const dynamic = "force-dynamic";
 export const SubmissionDetails = ({ submission }) => {
   const isSuccess = submission.status === "Accepted";
   const averageMemory = submission.memory ? 
