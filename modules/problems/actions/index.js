@@ -403,6 +403,17 @@ export const getAllSubmissionByCurrentUserForProblem = async (problemId) => {
             problemId: problemId,
             userId: userId.id,
         },
-    });
+        include: {
+            problem: {
+            select: {
+                id: true,
+                title: true,
+            },
+            },
+        },
+        orderBy: {
+                    createdAt: "desc",
+        },
+        });
     return { success: true, data: submissions };
 }

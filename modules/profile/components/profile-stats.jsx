@@ -47,16 +47,22 @@ const ProfileStats = ({ submissions, solvedCount, playlistCount }) => {
         return (
           <Card
             key={index}
-            className={`${stat.bgColor} hover:shadow-md transition-all duration-200`}
+            className="border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl overflow-hidden"
           >
             <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <Icon className={`w-6 h-6 ${stat.iconColor}`} />
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-            </div>
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-2.5 rounded-xl border ${stat.bgColor || 'bg-indigo-50 dark:bg-indigo-950/50'} ${stat.borderColor || 'border-indigo-100 dark:border-indigo-900/40'}`}>
+                  <Icon className={`w-5 h-5 ${stat.iconColor || 'text-indigo-600 dark:text-indigo-400'}`} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {stat.value}
+                </p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {stat.label}
+                </p>
+              </div>
             </CardContent>
           </Card>
         );

@@ -1,11 +1,9 @@
-"use client"; // <-- This must be the very first line
+"use client";
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Bookmark,
-  PencilIcon,
-  Trash,
   TrashIcon,
   Plus,
   Search,
@@ -14,9 +12,7 @@ import {
 import AddToPlaylistModal from "./add-to-playlist";
 import CreatePlaylistModal from "./create-playlist";
 import {
-  createPlaylist,
   deleteProblem,
-  addProblemToPlaylist,
 } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,11 +52,6 @@ interface User {
   role?: string;
 }
 
-interface PlaylistFormData {
-  name: string;
-  description: string;
-}
-
 interface ProblemsTableProps {
   problems?: Problem[];
   user?: User;
@@ -80,7 +71,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
   const allTags = useMemo(() => {
     if (!Array.isArray(problems)) return [];
     const tagsSet = new Set();
-    problems.forEach((p) => p.tags?.forEach((t:any) => tagsSet.add(t)));
+    problems.forEach((p) => p.tags?.forEach((t: any) => tagsSet.add(t)));
     return Array.from(tagsSet);
   }, [problems]);
 
@@ -89,10 +80,8 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
 
   // Filter problems based on search, difficulty, and tags
   const filteredProblems = useMemo(() => {
-    // 1. Guarantee we are working with an array
     const safeProblems = Array.isArray(problems) ? problems : [];
 
-    // 2. Apply all filters safely
     return safeProblems
       .filter((problem) =>
         problem.title.toLowerCase().includes(search.toLowerCase())
@@ -104,6 +93,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
         selectedTag === "ALL" ? true : problem.tags?.includes(selectedTag)
       );
   }, [problems, search, difficulty, selectedTag]);
+
   // Pagination logic
   const itemsPerPage = 5;
   const totalPages = Math.ceil(filteredProblems.length / itemsPerPage);
@@ -114,7 +104,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
     );
   }, [filteredProblems, currentPage]);
 
-  const handleDelete = async (id:string) => {
+  const handleDelete = async (id: string) => {
     const result = await deleteProblem(id);
     if (result.success) {
       toast.success(result.message);
@@ -123,7 +113,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
     }
   };
 
-  const handleCreatePlaylist = async (data:any) => {
+  const handleCreatePlaylist = async (data: any) => {
     try {
       const response = await fetch("/api/playlists", {
         method: "POST",
@@ -149,7 +139,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
     }
   };
 
-  const handleAddToPlaylist = async (problemId:string, playlistId:string) => {
+  const handleAddToPlaylist = async (problemId: string, playlistId: string) => {
     try {
       const response = await fetch("/api/playlists/add-problem", {
         method: "POST",
@@ -171,91 +161,80 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
       toast.error(message);
     }
   };
+
   const handleRemoveFromPlaylist = async (problemId: string, playlistId: string) => {
-  try {
-    const response = await fetch("/api/playlists/remove-problem", {
-      method: "DELETE", 
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ problemId, playlistId }),
-    });
+    try {
+      const response = await fetch("/api/playlists/remove-problem", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problemId, playlistId }),
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (result.success) {
-      // Optional: Remove this line if you want the menu to stay open after removing
-      setIsAddToPlaylistModalOpen(false); 
-      toast.success("Problem removed from playlist");
-    } else {
-      throw new Error(result.error);
-    }
-  } catch (error: unknown) {
-    console.error("Error removing from playlist:", error);
-    const message = error instanceof Error ? error.message : "Failed to remove problem from playlist";
-    toast.error(message);
-  }
-};
-  const getDifficultyVariant = (difficulty:string) => {
-    switch (difficulty) {
-      case "EASY":
-        return "default";
-      case "MEDIUM":
-        return "secondary";
-      case "HARD":
-        return "destructive";
-      default:
-        return "outline";
+      if (result.success) {
+        setIsAddToPlaylistModalOpen(false);
+        toast.success("Problem removed from playlist");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: unknown) {
+      console.error("Error removing from playlist:", error);
+      const message = error instanceof Error ? error.message : "Failed to remove problem from playlist";
+      toast.error(message);
     }
   };
 
-  const getDifficultyColor = (difficulty:string) => {
+  const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "EASY":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
+        return "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50";
       case "MEDIUM":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+        return "bg-amber-100/80 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border-amber-200 dark:border-amber-800/50";
       case "HARD":
-        return "bg-red-100 text-red-800 hover:bg-red-100";
+        return "bg-rose-100/80 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border-rose-200 dark:border-rose-800/50";
       default:
-        return "";
+        return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200";
     }
   };
-  
+
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 p-6">
+    <div className="w-full max-w-7xl mx-auto space-y-8 p-6 pt-24 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Problems</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Problems</h1>
+          <p className="text-slate-500 dark:text-slate-400">
             Manage and solve coding problems
           </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-          {/* Added pointer-events-none to prevent icon hijacking click */}
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 shadow-sm"
+        >
           <Plus className="h-4 w-4 pointer-events-none" />
           Create Playlist
         </Button>
-
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
+      <Card className="border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/50">
+          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
             <Filter className="h-5 w-5" />
-            <h3 className="text-lg font-medium">Filters</h3>
+            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">Filters</h3>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search by title..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 rounded-lg"
                 />
               </div>
             </div>
@@ -264,15 +243,14 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                 value={difficulty}
                 onValueChange={(value) => setDifficulty(value as DifficultyFilter)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-lg">
                   <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Difficulties</SelectItem>
                   {difficulties.map((diff) => (
                     <SelectItem key={diff} value={diff}>
-                      {diff.charAt(0).toUpperCase() +
-                        diff.slice(1).toLowerCase()}
+                      {diff.charAt(0).toUpperCase() + diff.slice(1).toLowerCase()}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -282,7 +260,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                 value={selectedTag}
                 onValueChange={(value) => setSelectedTag(value as TagFilter)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-lg">
                   <SelectValue placeholder="Select tag" />
                 </SelectTrigger>
                 <SelectContent>
@@ -300,37 +278,41 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card className="border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm overflow-hidden">
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50/70 dark:bg-slate-950/50 border-b border-slate-200/70 dark:border-slate-800">
               <TableRow>
-                <TableHead className="w-[100px]">Solved</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Tags</TableHead>
-                <TableHead className="w-[120px]">Difficulty</TableHead>
-                <TableHead className="w-[200px]">Actions</TableHead>
+                <TableHead className="w-[100px] text-slate-500 dark:text-slate-400">Solved</TableHead>
+                <TableHead className="text-slate-500 dark:text-slate-400">Title</TableHead>
+                <TableHead className="text-slate-500 dark:text-slate-400">Tags</TableHead>
+                <TableHead className="w-[120px] text-slate-500 dark:text-slate-400">Difficulty</TableHead>
+                <TableHead className="w-[200px] text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedProblems.length > 0 ? (
                 paginatedProblems.map((problem) => {
                   const isSolved = problem.solvedBy.length > 0;
-                  // problemsPlaylists may not be declared on Problem type in some builds
-                  const isInPlaylist = Array.isArray((problem as any).problemsPlaylists) && (problem as any).problemsPlaylists.length > 0;
+                  const isInPlaylist =
+                    Array.isArray((problem as any).problemsPlaylists) &&
+                    (problem as any).problemsPlaylists.length > 0;
                   return (
-                    <TableRow key={problem.id}>
+                    <TableRow
+                      key={problem.id}
+                      className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
+                    >
                       <TableCell>
                         <Checkbox
                           checked={isSolved}
                           disabled
-                          className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                          className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 dark:data-[state=checked]:bg-emerald-500"
                         />
                       </TableCell>
                       <TableCell className="font-medium">
                         <Link
                           href={`/problem/${problem.id}`}
-                          className="text-primary hover:underline transition-colors"
+                          className="text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                         >
                           {problem.title}
                         </Link>
@@ -340,8 +322,8 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                           {(problem.tags || []).map((tag, idx) => (
                             <Badge
                               key={idx}
-                              variant="outline"
-                              className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50"
+                              variant="secondary"
+                              className="text-xs bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/30"
                             >
                               {tag}
                             </Badge>
@@ -352,7 +334,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                         <Badge
                           className={`${getDifficultyColor(
                             problem.difficulty
-                          )} border-0 font-medium`}
+                          )} font-medium px-2.5 py-0.5 rounded-full border`}
                         >
                           {problem.difficulty}
                         </Badge>
@@ -360,35 +342,31 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {user?.role === "ADMIN" && (
-                            <>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDelete(problem.id)}
-                              >
-                                {/* Added pointer-events-none */}
-                                <TrashIcon className="h-4 w-4 pointer-events-none" />
-                              </Button>
-                            </>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(problem.id)}
+                              className="rounded-lg bg-rose-500 hover:bg-rose-600 text-white dark:bg-rose-600 dark:hover:bg-rose-700"
+                            >
+                              <TrashIcon className="h-4 w-4 pointer-events-none" />
+                            </Button>
                           )}
-                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedProblemId(problem.id);
-                            setIsAddToPlaylistModalOpen(true);
-                          }}
-                          className="gap-2"
-                        >
-                          <Bookmark 
-                            className="h-4 w-4" 
-                            // 2. Conditionally apply the fill
-                            fill={isInPlaylist ? "currentColor" : "none"} 
-                            // Optional: change the text color slightly if it's saved
-                            color={isInPlaylist ? "currentColor" : "currentColor"} 
-                          />
-                          {isInPlaylist ? "Saved" : "Save"}
-                        </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProblemId(problem.id);
+                              setIsAddToPlaylistModalOpen(true);
+                            }}
+                            className="gap-2 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <Bookmark
+                              className="h-4 w-4"
+                              fill={isInPlaylist ? "currentColor" : "none"}
+                              color="currentColor"
+                            />
+                            {isInPlaylist ? "Saved" : "Save"}
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -398,10 +376,10 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center py-8 text-muted-foreground"
+                    className="text-center py-12 text-slate-500 dark:text-slate-400"
                   >
                     <div className="flex flex-col items-center gap-2">
-                      <Search className="h-8 w-8 opacity-50" />
+                      <Search className="h-8 w-8 text-slate-400" />
                       <p>No problems found matching your criteria.</p>
                     </div>
                   </TableCell>
@@ -414,8 +392,8 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+          <p className="text-sm">
             Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
             {Math.min(currentPage * itemsPerPage, filteredProblems.length)} of{" "}
             {filteredProblems.length} problems
@@ -426,11 +404,12 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
               size="sm"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="rounded-lg border-slate-200 dark:border-slate-800"
             >
               Previous
             </Button>
             <div className="flex items-center gap-1">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                 Page {currentPage} of {totalPages}
               </span>
             </div>
@@ -439,6 +418,7 @@ const ProblemsTable = ({ problems, user }: ProblemsTableProps) => {
               size="sm"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="rounded-lg border-slate-200 dark:border-slate-800"
             >
               Next
             </Button>

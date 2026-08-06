@@ -1,9 +1,9 @@
 import React from 'react';
-import { Code, Clock, MemoryStick as Memory, CheckCircle, XCircle, AlertCircle, ChevronDown } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Code, Clock, MemoryStick as Memory, CheckCircle2, Cpu, XCircle, AlertCircle, ChevronDown, Calendar } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const SubmissionsHistory= ({ submissions }) => {
   const getStatusIcon = (status) => {
@@ -45,92 +45,130 @@ const SubmissionsHistory= ({ submissions }) => {
       return metricString;
     }
   };
+  const parseAndAverage = (val, unit = "") => {
+  if (!val) return "N/A";
+
+  let rawArray = [];
+
+  // Handle stringified JSON array: '["3244 KB", "3244 KB", "3236 KB"]'
+  if (typeof val === "string" && val.trim().startsWith("[")) {
+    try {
+      rawArray = JSON.parse(val);
+    } catch {
+      rawArray = [val];
+    }
+  } else if (Array.isArray(val)) {
+    rawArray = val;
+  } else {
+    rawArray = [val];
+  }
+
+  // Extract clean numerical values out of each entry (e.g., "3244 KB" -> 3244)
+  const numbers = rawArray
+    .map((item) => {
+      if (typeof item === "number") return item;
+      if (!item) return null;
+      const match = String(item).match(/[\d.]+/);
+      return match ? parseFloat(match[0]) : null;
+    })
+    .filter((num) => num !== null && !isNaN(num));
+
+  if (numbers.length === 0) return "N/A";
+
+  // Calculate Average
+  const sum = numbers.reduce((acc, curr) => acc + curr, 0);
+  const avg = sum / numbers.length;
+
+  return `${avg.toFixed(unit === "s" ? 3 : 1)} ${unit}`;
+};
+
+const formatMemory = (mem) => parseAndAverage(mem, "KB");
+const formatTime = (t) => parseAndAverage(t, "s");
+  const sortedSubmissions = [...submissions].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   return (
-    <Card className="mb-8">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-        <Code className="w-6 h-6 text-amber-500" />
-          <CardTitle className="text-2xl">Submissions History</CardTitle>
-          <Badge variant="secondary">
-          {submissions.length}
-          </Badge>
-        </div>
+    <Card className="w-full border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm transition-colors duration-300 text-left">
+      <CardHeader className="pb-4 border-b border-slate-100 dark:border-slate-800/50">
+        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Submission History
+        </CardTitle>
+        <CardDescription className="text-slate-500 dark:text-slate-400 text-xs">
+          Your previous submissions ordered by most recent
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-
-      <div className="space-y-4">
-        {submissions.map((submission, index) => (
-          <Card
-            key={submission.id}
-            className="hover:shadow-md transition-all duration-200"
-          >
-            <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(submission.status)}
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold">
-                          Submission #{submissions.length - index}
-                        </span>
-                        <Badge variant={getStatusStyle(submission.status)}>
-                          {submission.status}
-                        </Badge>
+      <CardContent className="pt-4">
+        <ScrollArea className="h-[420px] pr-4">
+          <div className="space-y-3">
+            {sortedSubmissions.length > 0 ? (
+              sortedSubmissions.map((submission) => {
+                const isAccepted = submission.status === "Accepted" || submission.status === "ACCEPTED";
+                return (
+                  <Card key={submission.id} className="border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/50 shadow-none hover:border-slate-300 dark:hover:border-slate-700 transition-all rounded-xl">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {isAccepted ? (
+                            <Badge className="bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 font-medium px-2.5 py-0.5 rounded-full">
+                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                              Accepted
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-rose-100/80 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 font-medium px-2.5 py-0.5 rounded-full">
+                              <XCircle className="mr-1.5 h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                              {submission.status || "Failed"}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(submission.createdAt)}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Code className="w-3 h-3" />
-                          {submission.language}
-                        </span>
-                        <span>{formatDate(submission.createdAt)}</span>
+
+                      <div className="grid grid-cols-3 gap-3 pt-1 border-t border-slate-200/40 dark:border-slate-800/40">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            <Code className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Language</p>
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{submission.language}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            <Cpu className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Memory</p>
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{formatMemory(submission.memory)}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            <Clock className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Time</p>
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{formatTime(submission.time)}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-blue-50 dark:bg-blue-950/50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-blue-500 dark:text-blue-400 mb-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-xs font-medium">Runtime</span>
-                    </div>
-                    <p className="text-sm font-semibold">
-                      {parseMetrics(submission.time)}
-                    </p>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-950/50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-purple-500 dark:text-purple-400 mb-1">
-                      <Memory className="w-4 h-4" />
-                      <span className="text-xs font-medium">Memory</span>
-                    </div>
-                    <p className="text-sm font-semibold">
-                      {parseMetrics(submission.memory)}
-                    </p>
-                  </div>
-                </div>
-
-                <Collapsible>
-                  <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-                    View Source Code
-                    <ChevronDown className="w-4 h-4" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="mt-3 bg-muted rounded-lg p-4 border">
-                      <pre className="text-xs overflow-x-auto font-mono leading-relaxed">
-                      <code>{submission.sourceCode}</code>
-                    </pre>
-                  </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
+                No submissions found.
               </div>
-            </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

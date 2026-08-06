@@ -50,63 +50,84 @@ export const SubmissionHistory = ({ submissions = [] }) => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Submission History</CardTitle>
-        <CardDescription>Your previous submissions for this problem</CardDescription>
+    <Card className="w-full border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm transition-colors duration-300 text-left">
+      <CardHeader className="pb-4 border-b border-slate-100 dark:border-slate-800/50">
+        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Submission History
+        </CardTitle>
+        <CardDescription className="text-slate-500 dark:text-slate-400 text-xs">
+          Your previous submissions for this problem
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-3">
-            {submissions.map((submission) => (
-              <Card key={submission.id} className="bg-muted/50">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {submission.status === "Accepted" ? (
-                        <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Accepted
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20">
-                          <XCircle className="mr-1 h-3 w-3" />
-                          Failed
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(submission.createdAt)}
-                    </div>
-                  </div>
+            {submissions.length > 0 ? (
+              submissions.map((submission) => {
+                const isAccepted = submission.status === "Accepted" || submission.status === "ACCEPTED";
+                return (
+                  <Card key={submission.id} className="border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/50 shadow-none hover:border-slate-300 dark:hover:border-slate-700 transition-all rounded-xl">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {isAccepted ? (
+                            <Badge className="bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 font-medium px-2.5 py-0.5 rounded-full">
+                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                              Accepted
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-rose-100/80 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 font-medium px-2.5 py-0.5 rounded-full">
+                              <XCircle className="mr-1.5 h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                              {submission.status || "Failed"}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(submission.createdAt)}
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Code className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Language</p>
-                        <p className="text-sm font-medium">{submission.language}</p>
+                      <div className="grid grid-cols-3 gap-3 pt-1 border-t border-slate-200/40 dark:border-slate-800/40">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            <Code className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Language</p>
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{submission.language}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            <Cpu className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Memory</p>
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{formatMemory(submission.memory)}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            <Clock className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Time</p>
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{formatTime(submission.time)}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Cpu className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Memory</p>
-                        <p className="text-sm font-medium">{formatMemory(submission.memory)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Time</p>
-                        <p className="text-sm font-medium">{formatTime(submission.time)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
+                No submissions found.
+              </div>
+            )}
           </div>
         </ScrollArea>
       </CardContent>

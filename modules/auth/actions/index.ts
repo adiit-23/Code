@@ -62,16 +62,27 @@ export const getCurrentUserData= async()=>{
         if (!user){
             return { success:false, error:"No Authenticated User Found"}
         }
-        const data= await prisma.user.findUnique({
-            where:{
-                clerkId:user?.id
-            },
-            include:{
-                    submissions: true,
-                    solvedProblems: true,
-                    playlists: true
-            }
-        }) 
+        const data = await prisma.user.findUnique({
+  where: {
+    clerkId: user?.id,
+  },
+  include: {
+    submissions: {
+      include: {
+        problem: {
+          select: {
+            title: true, // Joins Problem table to grab the title
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc", // Automatically orders newest submissions first
+      },
+    },
+    solvedProblems: true,
+    playlists: true,
+  },
+}); 
         console.log(data);
         return data;
     }
