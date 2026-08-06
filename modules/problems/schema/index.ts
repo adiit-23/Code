@@ -1,4 +1,4 @@
-import { Difficulty } from "@/lib/generated/prisma/enums";
+import { Difficulty } from "@prisma/client";
 import {z} from "zod";
 
 export const problemSchema = z.object({
