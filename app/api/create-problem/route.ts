@@ -6,12 +6,11 @@ import { getJudge0laguageId, submitBatch, pollBatchResults } from "@/lib/judge0"
 import { Source_Code_Pro } from "next/font/google";
 import { prisma } from "@/lib/db";
 
+
 export async function POST(request: NextRequest) {
     try {
         const userRole = await currentUserRole();
         const user = await getCurrentUserData();
-        
-        console.log("CURRENT USER OBJECT:", user);
         
         if (!user || !("id" in user)){
             return NextResponse.json({ error: "User not found" }, { status: 401 });
@@ -35,66 +34,55 @@ export async function POST(request: NextRequest) {
              return NextResponse.json({ error: "At least one test case is required" }, { status: 400 });
         }
 
+        // Helper to strip all whitespace for foolproof fallback comparison
+        const normalize = (str: string) => (str || "").replace(/\s+/g, "").trim();
+
         for (const [language, solutionCode] of Object.entries(referenceSolutions)) {
-            // 1. getJudge0laguageId now returns a direct number (e.g., 93) instead of an object
             const languageId = getJudge0laguageId(language);
             
             if (!languageId) {
                 return NextResponse.json({ error: `Unsupported language: ${language}` }, { status: 400 });
             }
             
-            // 2. Format submissions for Judge0
+            // 1. Format submissions
             const submissions = testCases.map(({ input, output }) => ({
-                source_code: solutionCode,
+                source_code: solutionCode as string,
                 language_id: languageId,
                 stdin: input,
                 expected_output: output 
             }));
             
-            // 3. Submit to Judge0 to get the execution tokens
+            // 2. Submit batch to Judge0
             const submitResponse = await submitBatch(submissions);
-            const tokens = submitResponse.map((res:any) => res.token);
+            const tokens = submitResponse.map((res: any) => res.token);
             
-            // 4. THE POLLING LOOP: Wait for Judge0 workers to finish evaluating
-            let results: any[] = [];
-            let isFinished = false;
-            let attempts = 0;
-            const MAX_ATTEMPTS = 15; // 15 seconds maximum wait time
-            
-            while (!isFinished && attempts < MAX_ATTEMPTS) {
-                // Wait 1 second between checks
-                await new Promise(resolve => setTimeout(resolve, 1000)); 
-                
-                results = await pollBatchResults(tokens);
-                
-                // Check if ALL submissions have finished processing
-                isFinished = results.every((r: any) => 
-                    r.status.description !== "Processing" && r.status.description !== "In Queue"
-                );
-                attempts++;
+            // 3. Poll results (pollBatchResults handles waiting internally)
+            const results = await pollBatchResults(tokens);
+
+            if (!results || results.length === 0) {
+                return NextResponse.json({ error: `Judge0 execution failed for ${language}` }, { status: 500 });
             }
 
-            if (!isFinished) {
-                return NextResponse.json({ error: `Judge0 execution timed out for ${language}` }, { status: 504 });
-            }
-
-            // 5. Validate the completed results
             console.log(`Results for ${language}:`, results);
             
+            // 4. Validate results
             for (let i = 0; i < results.length; i++) {
                 const result = results[i];
-                const expectedOutput = submissions[i].expected_output.trim();
-                const actualOutput = (result.stdout || "").trim();
+                const expectedOutput = String(submissions[i].expected_output || "").trim();
+                const actualOutput = String(result.stdout || "").trim();
 
-                // If Judge0 crashed/timed out, OR if our manual string validation fails
-                if (result.status.description !== "Accepted" || actualOutput !== expectedOutput) {
+                const isAcceptedByJudge0 = result.status?.id === 3 || result.status?.description === "Accepted";
+                const isNormalizedMatch = normalize(actualOutput) === normalize(expectedOutput);
+
+                // Pass if Judge0 accepted it OR normalized outputs match
+                if (!isAcceptedByJudge0 && !isNormalizedMatch) {
                     return NextResponse.json({
                         error: `Validation for ${language} failed`,
                         testCase: {
                             input: submissions[i].stdin,
                             expectedOutput: expectedOutput,
                             actualOutput: actualOutput,
-                            error: result.stderr || result.compile_output || "Wrong Answer",
+                            error: result.stderr || result.compile_output || result.status?.description || "Wrong Answer",
                         },
                         details: result,
                     }, { status: 400 });
@@ -102,10 +90,18 @@ export async function POST(request: NextRequest) {
             }
         }
         
-        // 6. Save to DB if everything passes
+        // 5. Save verified problem to Database
         const newProblem = await prisma.problem.create({
             data: {
-                title, description, difficulty, tags, examples, constraints, testCases, codeSnippets, referenceSolutions,
+                title, 
+                description, 
+                difficulty, 
+                tags, 
+                examples, 
+                constraints, 
+                testCases, 
+                codeSnippets, 
+                referenceSolutions,
                 userId: userId,
             }
         });
@@ -117,7 +113,7 @@ export async function POST(request: NextRequest) {
         }, { status: 201 });
 
     } catch (error) {
-        console.log("Database Error ", error);
+        console.log("Database Error:", error);
         return NextResponse.json({ error: "Failed to save problem to the database" }, { status: 500 });
     }
 }

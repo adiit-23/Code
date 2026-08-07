@@ -47,10 +47,10 @@ export const TestCaseTable = ({ testCases }) => {
                     </div>
                   </TableCell>
                   <TableCell className="text-slate-600 dark:text-slate-400 text-xs font-mono">
-                    {formatMemory(testCase.memory)}
+                    {(testCase.memory)}
                   </TableCell>
                   <TableCell className="text-slate-600 dark:text-slate-400 text-xs font-mono">
-                    {formatTime(testCase.time)}
+                    {(testCase.time)}
                   </TableCell>
                   <TableCell className="max-w-[180px]">
                     <code className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded text-xs font-mono block truncate border border-slate-200/50 dark:border-slate-800/50">

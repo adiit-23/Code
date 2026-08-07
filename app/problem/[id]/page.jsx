@@ -8,10 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TestCaseTable } from '@/modules/problems/components/test-case-table';
-import { SubmissionDetails } from '@/modules/problems/components/submission-details';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { RunResultPage } from '@/modules/problems/components/run-result';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Play, Send, Code, FileText, Lightbulb, Trophy, ArrowLeft, Loader2 } from 'lucide-react';
 
@@ -104,7 +102,7 @@ const ProblemIdPage = ({ params }) => {
       setIsRunning(true);
       const { language_id, stdin, expected_outputs } = getExecutionPayload();
       const res = await executeOnly(code, language_id, stdin, expected_outputs);
-      
+      console.log("EXECUTION RESPONSE FROM SERVER:", res);
       setExecutionResponse(res);
       
       if (res.success) {
@@ -129,6 +127,12 @@ const ProblemIdPage = ({ params }) => {
       setExecutionResponse(res);
       if (res.success) {
         toast.success("Code submitted successfully!");
+        // Refresh submission history after new submit
+        const resolvedParams = await params;
+        const updatedHistory = await getAllSubmissionByCurrentUserForProblem(resolvedParams.id);
+        if (updatedHistory.success) {
+          setSubmissionHistory(updatedHistory.data);
+        }
       } else {
         toast.error(res.error || "Failed to submit code.");
       }
@@ -139,6 +143,65 @@ const ProblemIdPage = ({ params }) => {
       setIsSubmitting(false);
     }
   };
+
+  // Helper to format Judge0 / server execution response for <RunResultPage />
+  const formatRunData = () => {
+    if (!executionResponse) return null;
+
+    // Handle stringified Next.js server action responses if present
+    let rawPayload = executionResponse;
+    if (typeof executionResponse === "string") {
+      try {
+        const cleanedJson = executionResponse.replace(/^[0-9]+:/, "").trim();
+        rawPayload = JSON.parse(cleanedJson);
+      } catch (e) {
+        console.error("Failed to parse stringified response:", e);
+      }
+    }
+
+    // Extract detailedResults from server action
+    const resultsList =
+      rawPayload.detailedResults ||
+      rawPayload.results ||
+      rawPayload.submission?.testCases ||
+      rawPayload.testCases ||
+      [];
+
+    const formattedResults = resultsList.map((item, idx) => {
+      const origTestCase = problem?.testCases?.[idx] || {};
+      const isAccepted =
+        item.passed === true ||
+        item.status === "Accepted" ||
+        item.status?.id === 3;
+
+      return {
+        stdout: item.stdout ?? item.actualOutput ?? "",
+        stderr: item.stderr ?? item.error ?? null,
+        compile_output: item.compile_output ?? null,
+        status: {
+          id: isAccepted ? 3 : 4,
+          description: isAccepted ? "Accepted" : item.status || "Wrong Answer",
+        },
+        time: item.time ?? "0.00 s",
+        memory: item.memory ? parseInt(String(item.memory)) : 0,
+        input: item.input ?? origTestCase.input ?? "",
+        expectedOutput: item.expected ?? item.expectedOutput ?? origTestCase.output ?? "",
+      };
+    });
+
+    const isOverallSuccess =
+      rawPayload.allPassed ??
+      rawPayload.success ??
+      (formattedResults.length > 0 && formattedResults.every((r) => r.status.id === 3));
+
+    return {
+      language: selectedLanguage,
+      isSuccess: Boolean(isOverallSuccess),
+      executedAt: new Date(),
+      results: formattedResults,
+    };
+  };
+  const formattedRunData = formatRunData();
 
   if (!problem) {
     return (
@@ -264,7 +327,7 @@ const ProblemIdPage = ({ params }) => {
             </Card>
           </div>
 
-          {/* Right Panel - Code Editor and Test Cases */}
+          {/* Right Panel - Code Editor and Test Cases / Results */}
           <div className="space-y-6">
             {/* Code Editor */}
             <Card className="border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm">
@@ -286,7 +349,7 @@ const ProblemIdPage = ({ params }) => {
                       <SelectContent>
                         <SelectItem value="JAVASCRIPT">JavaScript</SelectItem>
                         <SelectItem value="PYTHON">Python</SelectItem>
-                        <SelectItem value="C">C++</SelectItem>
+                        <SelectItem value="CPP">C++</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -335,7 +398,7 @@ const ProblemIdPage = ({ params }) => {
               </CardContent>
             </Card>
 
-            {/* Test Cases */}
+            {/* Test Cases Panel */}
             <Card className="border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm">
               <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/50">
                 <CardTitle className="text-base text-slate-800 dark:text-slate-200">Test Cases</CardTitle>
@@ -370,11 +433,10 @@ const ProblemIdPage = ({ params }) => {
               </CardContent>
             </Card>
 
-            {/* Test Results and Submission Details */}
-            {executionResponse && executionResponse.submission && (
-              <div className="space-y-4 mt-4">
-                <SubmissionDetails submission={executionResponse.submission} />
-                <TestCaseTable testCases={executionResponse.submission.testCases} />
+            {/* Execution & Run Results View */}
+            {formattedRunData && (
+              <div className="mt-6">
+                <RunResultPage runData={formattedRunData} />
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Terminal, Cpu, Shield, Layers, Code2, Server, Moon, Sun, Laptop, Database } from 'lucide-react';
+import { Terminal, Cpu, Shield, Layers, Code2, Server, Moon, Sun, Laptop, Database, Lightbulb } from 'lucide-react';
 export const dynamic = "force-dynamic";
 export default function AboutPage() {
   const [isDark, setIsDark] = useState(false);
@@ -23,9 +23,9 @@ export default function AboutPage() {
       description: "Problem metadata, submission history, and user data are persisted reliably using Neon's serverless PostgreSQL managed via Prisma ORM."
     },
     {
-      icon: <Server className="w-6 h-6 text-sky-500 dark:text-sky-300" />,
-      title: "Express API Gateway",
-      description: "Acts as the central backend orchestrator, formatting submission payloads, communicating with Judge0, and storing verdicts."
+      icon: <Lightbulb className="w-6 h-6 text-amber-500 dark:text-amber-300" />,
+        title: "AI Hints Engine",
+        description: "Provides contextual, step-by-step guidance and debugging tips based on your current code and failing test cases without giving away the direct answer."
     }
   ];
 

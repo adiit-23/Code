@@ -3,8 +3,9 @@ import { prisma } from '@/lib/db';
 import { UserRole } from '@prisma/client';
 import { currentUser } from '@clerk/nextjs/server';
 import { revalidatePath } from "next/cache";
-import { getLanguageName,submitBatch,pollBatchResults } from '@/lib/judge0';
+import { getLanguageName,submitBatch,pollBatchResults, sanitizeCode } from '@/lib/judge0';
 import { NextResponse } from "next/server";
+import { getCurrentStreak } from "@/lib/streak";
 
 export const getAllProblems = async () => {
   try {
@@ -210,14 +211,12 @@ export const executeOnly = async (source_code, language_id, stdin, expected_outp
   }
 
   try {
-    const encodeBase64 = (str) => Buffer.from(str || "").toString("base64");
+   const cleanedSource = sanitizeCode(source_code || "");
 
-  const submissions = stdin.map((input) => ({
-  source_code: encodeBase64(source_code),
-  language_id: Number(language_id), // Ensure it is an integer (e.g., 71 for Python)
-  stdin: encodeBase64(String(input).trim() + "\n"),
-  base64_encoded: true,
-  wait: false,
+const submissions = stdin.map((input) => ({
+  source_code: cleanedSource,
+  language_id: Number(language_id),
+  stdin: String(input).trim(),
 }));
 
     const submitResponse = await submitBatch(submissions);
@@ -270,7 +269,7 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
 
     // 1. Guard against unauthenticated requests
     if (!user || !user.id) {
-      return NextResponse.json({ error: "Unauthorized user" }, { status: 401 });
+      return { success: false, error: "Unauthorized user" };
     }
 
     const prismaUser = await prisma.user.findUnique({
@@ -278,114 +277,121 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
     });
 
     if (!prismaUser) {
-      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
+      return { success: false, error: "User not found in database" };
     }
 
-    // 2. Run the code execution
+    // 2. Run code execution via executeOnly
     const executionData = await executeOnly(source_code, language_id, stdin, expected_outputs);
 
     if (!executionData.success) {
-      return { success: false, error: executionData.error };
+      return { success: false, error: executionData.error || "Execution failed" };
     }
 
-    const { allPassed, detailedResults } = executionData;
+    const { detailedResults = [] } = executionData;
 
-    // 3. Save Submission to Database
-    const submission = await prisma.submission.create({
-      data: {
-        userId: prismaUser.id,
-        problemId: id,
-        sourceCode: source_code,
-        language: getLanguageName(language_id),
-        stdin: stdin.join('\n'),
-        stdout: JSON.stringify(detailedResults.map((r) => r.stdout)),
-        stderr: detailedResults.some((r) => r.stderr)
-          ? JSON.stringify(detailedResults.map((r) => r.stderr))
-          : null,
-        compileOutput: detailedResults.some((r) => r.compile_output)
-          ? JSON.stringify(detailedResults.map((r) => r.compile_output))
-          : null,
-        status: allPassed ? 'Accepted' : 'Wrong Answer',
-        memory: detailedResults.some((r) => r.memory)
-          ? JSON.stringify(detailedResults.map((r) => r.memory))
-          : null,
-        time: detailedResults.some((r) => r.time)
-          ? JSON.stringify(detailedResults.map((r) => r.time))
-          : null,
-      },
+    // Helper to normalize strings and prevent space formatting discrepancies in DB
+    const normalize = (str) => (str || "").replace(/\s+/g, "").trim();
+
+    // Re-verify that every test case actually passed
+    const allPassed =
+      detailedResults.length > 0 &&
+      detailedResults.every((res) => {
+        const statusOk = res.status === "Accepted" || res.status?.id === 3 || res.passed === true;
+        const outputMatches = normalize(res.stdout) === normalize(res.expected);
+        return statusOk || outputMatches;
+      });
+
+    // 3. Streak & Date Logic
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const lastSub = prismaUser.lastSubmissionDate ? new Date(prismaUser.lastSubmissionDate) : null;
+    if (lastSub) lastSub.setHours(0, 0, 0, 0);
+
+    const submittedToday = lastSub?.getTime() === today.getTime();
+    const currentStreak = getCurrentStreak(prismaUser);
+
+    // 4. Perform atomic transaction
+    const submissionId = await prisma.$transaction(async (tx) => {
+      // Create Main Submission Record
+      const newSubmission = await tx.submission.create({
+        data: {
+          userId: prismaUser.id,
+          problemId: id,
+          sourceCode: source_code,
+          language: getLanguageName(language_id),
+          stdin: Array.isArray(stdin) ? stdin.join("\n") : String(stdin || ""),
+          stdout: JSON.stringify(detailedResults.map((r) => r.stdout || "")),
+          stderr: detailedResults.some((r) => r.stderr)
+            ? JSON.stringify(detailedResults.map((r) => r.stderr || ""))
+            : null,
+          compileOutput: detailedResults.some((r) => r.compile_output)
+            ? JSON.stringify(detailedResults.map((r) => r.compile_output || ""))
+            : null,
+          status: allPassed ? "Accepted" : "Wrong Answer",
+          memory: JSON.stringify(detailedResults.map((r) => r.memory || "0")),
+          time: JSON.stringify(detailedResults.map((r) => r.time || "0s")),
+        },
+      });
+
+      // Save detailed test case results
+      const testCaseResults = detailedResults.map((result) => ({
+        submissionId: newSubmission.id,
+        testCase: result.testCase,
+        passed: Boolean(result.passed || result.status === "Accepted"),
+        stdout: result.stdout || "",
+        expected: result.expected || "",
+        stderr: result.stderr || null,
+        compileOutput: result.compile_output || null,
+        status: result.status === "Accepted" || result.passed ? "Accepted" : "Wrong Answer",
+        memory: String(result.memory || "0"),
+        time: String(result.time || "0s"),
+      }));
+
+      await tx.testCaseResult.createMany({ data: testCaseResults });
+
+      // If all tests passed, update problem solved status & user streak
+      if (allPassed) {
+        await tx.problemSolved.upsert({
+          where: {
+            userId_problemId: { userId: prismaUser.id, problemId: id },
+          },
+          update: {},
+          create: { userId: prismaUser.id, problemId: id },
+        });
+
+        if (!submittedToday) {
+          await tx.user.update({
+            where: { id: prismaUser.id },
+            data: {
+              streak: currentStreak + 1,
+              lastSubmissionDate: new Date(),
+            },
+          });
+        }
+      }
+
+      return newSubmission.id;
     });
 
-    // 4. Mark problem as solved if all test cases passed
-    if (allPassed) {
-      await prisma.problemSolved.upsert({
-        where: {
-          userId_problemId: { userId: prismaUser.id, problemId: id },
-        },
-        update: {},
-        create: { userId: prismaUser.id, problemId: id },
-      });
-    }
-    const today = new Date();
-      today.setHours(0, 0, 0, 0); // Start of today
-
-      const lastSubmissionDate = prismaUser.lastSubmissionDate 
-        ? new Date(prismaUser.lastSubmissionDate) 
-        : null;
-
-      if (lastSubmissionDate) {
-        lastSubmissionDate.setHours(0, 0, 0, 0);
-      }
-
-      // If they haven't submitted anything today, update the streak
-      if (!lastSubmissionDate || lastSubmissionDate < today) {
-        
-        // Calculate if it's consecutive (submitted yesterday)
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        const isConsecutive = lastSubmissionDate && lastSubmissionDate.getTime() === yesterday.getTime();
-
-        await prisma.user.update({
-          where: { id: prismaUser.id },
-          data: {
-            // If submitted yesterday, add 1. Otherwise, reset to 1.
-            streak: isConsecutive ? prismaUser.streak + 1 : 1, 
-            lastSubmissionDate: new Date(), // Set to current time
-          }
-        });
-      }
-    // 5. Save detailed test case results
-    const testCaseResults = detailedResults.map((result) => ({
-      submissionId: submission.id,
-      testCase: result.testCase,
-      passed: result.passed,
-      stdout: result.stdout,
-      expected: result.expected,
-      stderr: result.stderr,
-      compileOutput: result.compile_output,
-      status: result.status,
-      memory: result.memory,
-      time: result.time,
-    }));
-
-    await prisma.testCaseResult.createMany({ data: testCaseResults });
-
-    // 6. Fetch the complete submission to return
+    // 5. Fetch submission record with test cases
     const submissionWithTestCases = await prisma.submission.findUnique({
-      where: { id: submission.id },
+      where: { id: submissionId },
       include: { testCases: true },
     });
 
-    return { success: true, submission: submissionWithTestCases };
-    
+    return {
+      success: true,
+      allPassed,
+      submission: submissionWithTestCases,
+      detailedResults,
+    };
   } catch (error) {
-    // Log the actual Prisma error message
     console.error("🔥 DB/SUBMISSION ERROR:", error.message || error);
-
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return {
+      success: false,
+      error: error.message || "Failed to process submission",
+    };
   }
 };
 export const getAllSubmissionByCurrentUserForProblem = async (problemId) => {

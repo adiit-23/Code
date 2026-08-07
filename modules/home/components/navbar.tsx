@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import Image from "next/image";
 import { ModeToggle } from '@/components/ui/mode-toggle';
-
+import { getCurrentStreak } from "@/lib/streak";
 async function Navbar() {
   const { userId } = await auth(); 
   
@@ -23,11 +23,14 @@ async function Navbar() {
       select: {
         role: true,
         streak: true,
+        lastSubmissionDate: true,
       },
     });
 
-    userRole = dbUser?.role;
-    streakCount = dbUser?.streak || 0;
+    if (dbUser) {
+    userRole = dbUser.role;
+    streakCount = getCurrentStreak(dbUser); // Returns 0 if streak expired, or dbUser.streak if active
+  }
   }
 
   // Redirect target for protected routes when signed out
