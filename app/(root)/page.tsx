@@ -25,7 +25,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-export const dynamic = "force-dynamic";
+
 export default async function Home() {
   await onboardUser();
   const { userId } = await auth();
