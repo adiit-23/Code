@@ -21,7 +21,10 @@ import { getJudge0laguageId } from '@/lib/judge0';
 import { toast } from 'sonner';
 import { SubmissionHistory } from '@/modules/problems/components/submission-history';
 import Link from 'next/link';
+import { AIHintModal } from '@/modules/problems/components/ai-hint-modal';
+
 export const dynamic = "force-dynamic";
+
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
     case 'EASY':
@@ -271,16 +274,22 @@ const ProblemIdPage = ({ params }) => {
                     <Code className="h-5 w-5" />
                     Code Editor
                   </CardTitle>
-                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                    <SelectTrigger className="w-36 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="JAVASCRIPT">JavaScript</SelectItem>
-                      <SelectItem value="PYTHON">Python</SelectItem>
-                      <SelectItem value="C">C++</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                  {/* AI Hint Trigger Button & Language Selector */}
+                  <div className="flex items-center gap-3">
+                    <AIHintModal problemId={problem.id} userCode={code} />
+
+                    <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                      <SelectTrigger className="w-36 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="JAVASCRIPT">JavaScript</SelectItem>
+                        <SelectItem value="PYTHON">Python</SelectItem>
+                        <SelectItem value="C">C++</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
