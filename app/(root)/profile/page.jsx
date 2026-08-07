@@ -6,6 +6,7 @@ import SolvedProblems from "@/modules/profile/components/solved-problem";
 import SubmissionsHistory from "@/modules/profile/components/submission-history"
 import React from "react";
 import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
 const ProfilePage = async () => {
   const profileData = await getCurrentUserData();
 
