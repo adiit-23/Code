@@ -3,7 +3,7 @@
 import { useTheme } from 'next-themes';
 import Editor from '@monaco-editor/react';
 import { executeOnly, executeAndSubmit, getAllSubmissionByCurrentUserForProblem, getProblemById } from '@/modules/problems/actions';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +45,7 @@ const ProblemIdPage = ({ params }) => {
   const [submissionHistory, setSubmissionHistory] = useState([]);
   const [executionResponse, setExecutionResponse] = useState(null);
   const { theme, resolvedTheme } = useTheme();
-
+  const editorRef = useRef(null); // 1. Create an Editor reference
   // Resolves system or explicit light/dark setting for Monaco Editor
   const currentTheme = theme === 'system' ? resolvedTheme : theme;
   const editorTheme = currentTheme === 'dark' ? 'vs-dark' : 'light';
@@ -89,6 +89,18 @@ const ProblemIdPage = ({ params }) => {
     }
   }, [selectedLanguage, problem]);
 
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+  };
+
+  // 2. Helper to always retrieve the fresh live code string
+  const getLiveCode = () => {
+    if (editorRef.current) {
+      return editorRef.current.getValue();
+    }
+    return code;
+  };
+
   const getExecutionPayload = () => {
     return {
       language_id: getJudge0laguageId(selectedLanguage),
@@ -100,8 +112,9 @@ const ProblemIdPage = ({ params }) => {
   const handleRun = async () => {
     try {
       setIsRunning(true);
+      const currentCode = getLiveCode();
       const { language_id, stdin, expected_outputs } = getExecutionPayload();
-      const res = await executeOnly(code, language_id, stdin, expected_outputs);
+      const res = await executeOnly(currentCode, language_id, stdin, expected_outputs);
       console.log("EXECUTION RESPONSE FROM SERVER:", res);
       setExecutionResponse(res);
       
@@ -121,24 +134,36 @@ const ProblemIdPage = ({ params }) => {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+      const currentCode = getLiveCode();
       const { language_id, stdin, expected_outputs } = getExecutionPayload();
-      const res = await executeAndSubmit(code, language_id, stdin, expected_outputs, problem.id);
+
+      // 1. Call server action
+      const res = await executeAndSubmit(currentCode, language_id, stdin, expected_outputs, problem.id);
       
-      setExecutionResponse(res);
-      if (res.success) {
-        toast.success("Code submitted successfully!");
-        // Refresh submission history after new submit
+      console.log("SUBMIT ACTION RESPONSE:", res); // Debug log
+
+      if (res && res.success) {
+        setExecutionResponse(res);
+
+        if (res.allPassed) {
+          toast.success("Code submitted and accepted!");
+        } else {
+          toast.error("Submission saved: Some test cases failed.");
+        }
+
+        // 2. IMMEDIATELY RE-FETCH SUBMISSION HISTORY FROM DATABASE
         const resolvedParams = await params;
-        const updatedHistory = await getAllSubmissionByCurrentUserForProblem(resolvedParams.id);
-        if (updatedHistory.success) {
-          setSubmissionHistory(updatedHistory.data);
+        const historyRes = await getAllSubmissionByCurrentUserForProblem(resolvedParams.id);
+        
+        if (historyRes && historyRes.success) {
+          setSubmissionHistory(historyRes.data);
         }
       } else {
-        toast.error(res.error || "Failed to submit code.");
+        toast.error(res?.error || "Failed to save submission to database.");
       }
     } catch (error) {
-      console.log("Error submitting code", error);
-      toast.error("Error submitting code.");
+      console.error("Error submitting code:", error);
+      toast.error("An unexpected error occurred during submission.");
     } finally {
       setIsSubmitting(false);
     }
@@ -148,7 +173,6 @@ const ProblemIdPage = ({ params }) => {
   const formatRunData = () => {
     if (!executionResponse) return null;
 
-    // Handle stringified Next.js server action responses if present
     let rawPayload = executionResponse;
     if (typeof executionResponse === "string") {
       try {
@@ -159,7 +183,6 @@ const ProblemIdPage = ({ params }) => {
       }
     }
 
-    // Extract detailedResults from server action
     const resultsList =
       rawPayload.detailedResults ||
       rawPayload.results ||
@@ -167,36 +190,40 @@ const ProblemIdPage = ({ params }) => {
       rawPayload.testCases ||
       [];
 
+    // --- REPLACED THIS SECTION WITH YOUR STRICT CHECK CODE ---
     const formattedResults = resultsList.map((item, idx) => {
       const origTestCase = problem?.testCases?.[idx] || {};
-      const isAccepted =
-        item.passed === true ||
-        item.status === "Accepted" ||
-        item.status?.id === 3;
+
+      const actualOutput = item.stdout ?? item.actualOutput ?? "";
+      const expectedOutput = item.expected ?? item.expectedOutput ?? origTestCase.output ?? "";
+
+      // 1. STRICT CHECK: Trust item.passed explicitly from your backend calculation
+      // DO NOT trust item.status alone, as Judge0 returns "Accepted" for non-crashing Wrong Answers!
+      const isPassed = item.passed === true;
 
       return {
-        stdout: item.stdout ?? item.actualOutput ?? "",
+        stdout: actualOutput,
         stderr: item.stderr ?? item.error ?? null,
         compile_output: item.compile_output ?? null,
         status: {
-          id: isAccepted ? 3 : 4,
-          description: isAccepted ? "Accepted" : item.status || "Wrong Answer",
+          id: isPassed ? 3 : 4,
+          description: isPassed ? "Accepted" : "Wrong Answer",
         },
         time: item.time ?? "0.00 s",
         memory: item.memory ? parseInt(String(item.memory)) : 0,
         input: item.input ?? origTestCase.input ?? "",
-        expectedOutput: item.expected ?? item.expectedOutput ?? origTestCase.output ?? "",
+        expectedOutput: expectedOutput,
       };
     });
+    // --- END REPLACEMENT ---
 
     const isOverallSuccess =
-      rawPayload.allPassed ??
-      rawPayload.success ??
-      (formattedResults.length > 0 && formattedResults.every((r) => r.status.id === 3));
+      formattedResults.length > 0 &&
+      formattedResults.every((r) => r.status.id === 3);
 
     return {
       language: selectedLanguage,
-      isSuccess: Boolean(isOverallSuccess),
+      isSuccess: isOverallSuccess,
       executedAt: new Date(),
       results: formattedResults,
     };
@@ -361,6 +388,7 @@ const ProblemIdPage = ({ params }) => {
                     height="400px"
                     language={selectedLanguage.toLowerCase() === 'javascript' ? 'javascript' : selectedLanguage.toLowerCase()}
                     value={code}
+                    onMount={handleEditorDidMount}
                     onChange={(value) => setCode(value || '')}
                     theme={editorTheme}
                     options={{

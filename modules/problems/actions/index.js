@@ -267,41 +267,46 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
   try {
     const user = await currentUser();
 
-    // 1. Guard against unauthenticated requests
     if (!user || !user.id) {
       return { success: false, error: "Unauthorized user" };
     }
 
-    const prismaUser = await prisma.user.findUnique({
+    // Attempt lookup by clerkId OR id
+    let prismaUser = await prisma.user.findUnique({
       where: { clerkId: user.id },
     });
 
     if (!prismaUser) {
-      return { success: false, error: "User not found in database" };
+      prismaUser = await prisma.user.findUnique({
+        where: { id: user.id },
+      });
     }
 
-    // 2. Run code execution via executeOnly
+    if (!prismaUser) {
+      return { success: false, error: "User account not found in database" };
+    }
+
+    // 1. Run Judge0 Code Execution
     const executionData = await executeOnly(source_code, language_id, stdin, expected_outputs);
 
-    if (!executionData.success) {
-      return { success: false, error: executionData.error || "Execution failed" };
+    if (!executionData || !executionData.success) {
+      return { success: false, error: executionData?.error || "Execution failed" };
     }
 
     const { detailedResults = [] } = executionData;
 
-    // Helper to normalize strings and prevent space formatting discrepancies in DB
+    // 2. Strict evaluation of all test cases
     const normalize = (str) => (str || "").replace(/\s+/g, "").trim();
 
-    // Re-verify that every test case actually passed
     const allPassed =
       detailedResults.length > 0 &&
       detailedResults.every((res) => {
         const statusOk = res.status === "Accepted" || res.status?.id === 3 || res.passed === true;
         const outputMatches = normalize(res.stdout) === normalize(res.expected);
-        return statusOk || outputMatches;
+        return statusOk && outputMatches;
       });
 
-    // 3. Streak & Date Logic
+    // 3. Dates & Streak Calculations
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -309,11 +314,11 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
     if (lastSub) lastSub.setHours(0, 0, 0, 0);
 
     const submittedToday = lastSub?.getTime() === today.getTime();
-    const currentStreak = getCurrentStreak(prismaUser);
+    const currentStreak = typeof getCurrentStreak === "function" ? getCurrentStreak(prismaUser) : (prismaUser.streak || 0);
 
-    // 4. Perform atomic transaction
+    // 4. Atomic Prisma Transaction
     const submissionId = await prisma.$transaction(async (tx) => {
-      // Create Main Submission Record
+      // Create main submission record
       const newSubmission = await tx.submission.create({
         data: {
           userId: prismaUser.id,
@@ -334,23 +339,25 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
         },
       });
 
-      // Save detailed test case results
-      const testCaseResults = detailedResults.map((result) => ({
-        submissionId: newSubmission.id,
-        testCase: result.testCase,
-        passed: Boolean(result.passed || result.status === "Accepted"),
-        stdout: result.stdout || "",
-        expected: result.expected || "",
-        stderr: result.stderr || null,
-        compileOutput: result.compile_output || null,
-        status: result.status === "Accepted" || result.passed ? "Accepted" : "Wrong Answer",
-        memory: String(result.memory || "0"),
-        time: String(result.time || "0s"),
-      }));
+      // Save individual testcase results
+      if (detailedResults.length > 0) {
+        const testCaseResults = detailedResults.map((result, idx) => ({
+          submissionId: newSubmission.id,
+          testCase: result.testCase || idx + 1,
+          passed: Boolean(result.passed || (result.status === "Accepted" && normalize(result.stdout) === normalize(result.expected))),
+          stdout: result.stdout || "",
+          expected: result.expected || "",
+          stderr: result.stderr || null,
+          compileOutput: result.compile_output || null,
+          status: result.passed || normalize(result.stdout) === normalize(result.expected) ? "Accepted" : "Wrong Answer",
+          memory: String(result.memory || "0"),
+          time: String(result.time || "0s"),
+        }));
 
-      await tx.testCaseResult.createMany({ data: testCaseResults });
+        await tx.testCaseResult.createMany({ data: testCaseResults });
+      }
 
-      // If all tests passed, update problem solved status & user streak
+      // Update Solved Status & Streak if ALL passed
       if (allPassed) {
         await tx.problemSolved.upsert({
           where: {
@@ -374,7 +381,7 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
       return newSubmission.id;
     });
 
-    // 5. Fetch submission record with test cases
+    // 5. Fetch completed record to return to UI
     const submissionWithTestCases = await prisma.submission.findUnique({
       where: { id: submissionId },
       include: { testCases: true },
@@ -387,10 +394,15 @@ export const executeAndSubmit = async (source_code, language_id, stdin, expected
       detailedResults,
     };
   } catch (error) {
-    console.error("🔥 DB/SUBMISSION ERROR:", error.message || error);
+    console.error("🔥 PRISMA ERROR DETAILS:", {
+      message: error.message,
+      code: error.code,       // e.g. P2002, P2003
+      meta: error.meta,       // Tells you EXACTLY which column/relation failed
+    });
+
     return {
       success: false,
-      error: error.message || "Failed to process submission",
+      error: error.message || "Failed to commit submission to database",
     };
   }
 };

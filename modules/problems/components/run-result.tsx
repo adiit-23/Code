@@ -70,8 +70,9 @@ export const RunResultPage = ({ runData }: RunResultProps) => {
       : 0;
 
   const passedCasesCount = results.filter(
-    (r) => r.status?.id === 3 || r.status?.description === "Accepted"
+    (r) => r.status?.id === 3
   ).length;
+  const isOverallSuccess = results.length > 0 && passedCasesCount === results.length;
 
   return (
     <div className="w-full space-y-6 max-w-5xl mx-auto p-4">
@@ -91,7 +92,7 @@ export const RunResultPage = ({ runData }: RunResultProps) => {
               </Badge>
             </div>
 
-            {isSuccess ? (
+            {isOverallSuccess ? (
               <Badge className="bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 font-medium px-2.5 py-0.5 rounded-full">
                 <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 Accepted
